@@ -51,9 +51,13 @@ int main(int argc, char * argv[])
  	  }
  	  else if (flag==2)
  	  {
- 	    printf("i am the child (schedular), pid=%d\n",getpid());
- 	    char*argv[4*n]+1;
- 	    int j=0;
+ 	    printf("i am the child (scheduler), pid=%d\n",getpid());
+ 	    char*argv[4*n+4];
+ 	    argv[0]="scheduler.out";
+ 	    sprintf(argv[1], "%d", algo);
+ 	    sprintf(argv[2], "%d", timeslot);
+ 	    sprintf(argv[3], "%d", n);
+ 	    int j=4;
  	    for(int i=0; i<n; i++)
  	    {
  	    	sprintf(argv[j], "%d", id[i]);
@@ -74,8 +78,11 @@ int main(int argc, char * argv[])
  	    	sprintf(argv[j], "%d", priority[i]);
  	    	j++;
  	    }
- 	    argv[4*n]=NULL;
+ 	    argv[4*n+3]=NULL;
  	    execvp("./scheduler.out", argv);
+ 	    //execlp("./clk.out","clk.out",NULL);
+ 	    //execlp("./scheduler.out" ,"scheduler.out",NULL);
+ 	    printf("\nstill here\n");
  	  }
         }
     // 4. Use this function after creating the clock process to initialize clock
@@ -125,6 +132,8 @@ int main(int argc, char * argv[])
     //}
     
     // 7. Clear clock resources
+    //int temp;
+    //wait(&temp); wait(&temp);
     destroyClk(true);
    }
 }
