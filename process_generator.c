@@ -46,12 +46,7 @@ int main(int argc, char * argv[])
  	{ 
  	  if (flag==1)
  	  {
- 	  printf("i am the child (clock), pid=%d\n",getpid());
- 	  execlp("./clk.out","clk.out",NULL);
- 	  }
- 	  else if (flag==2)
- 	  {
- 	    printf("i am the child (scheduler), pid=%d\n",getpid());
+ 	  	printf("i am the child (scheduler), pid=%d\n",getpid());
  	    char*argv[4*n+4];
  	    argv[0]="scheduler.out";
  	    sprintf(argv[1], "%d", algo);
@@ -83,6 +78,14 @@ int main(int argc, char * argv[])
  	    //execlp("./clk.out","clk.out",NULL);
  	    //execlp("./scheduler.out" ,"scheduler.out",NULL);
  	    printf("\nstill here\n");
+ 	  
+ 	  ///////////////
+ 	 
+ 	  }
+ 	  else if (flag==2)
+ 	  {
+ 	     printf("i am the child (clock), pid=%d\n",getpid());
+ 	  	execlp("./clk.out","clk.out",NULL);
  	  }
         }
     // 4. Use this function after creating the clock process to initialize clock
