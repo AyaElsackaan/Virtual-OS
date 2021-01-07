@@ -1,5 +1,7 @@
 #include "headers.h"
 #include "data_structures.h"
+#include <errno.h>
+extern int errno ;
 
 void clearResources(int);
 void HPF();
@@ -95,9 +97,77 @@ printf("\n started\n\n");printf("\n arguments=%d \n\n",argc);
     destroyClk(true);
 }
 Node_priority **ready;
+int msgq_busy;
+char*str;
 void HPF()
 {
-	int CPU_busy=0;
+
+ 	key_t key_busy;
+    
+
+	//create/get message queue
+    key_busy = ftok("keyfile", 'B');  //unique
+    
+    msgq_busy = msgget(key_busy, 0666 | IPC_CREAT); 
+    if (msgq_busy == -1)
+    {
+        perror("Error in creating busy");
+        exit(-1);
+    }
+    printf("Message Queue ID  (busy)= %d\n", msgq_busy);
+    
+    int CPU_busy=0;
+    
+    int send_val = msgsnd(msgq_busy, &CPU_busy, sizeof(CPU_busy), !IPC_NOWAIT); 
+
+		if (send_val == -1)
+		    perror("Error in send");
+		printf("busy=%d\n",CPU_busy);
+
+	//struct msgbuff msg_sent, msg_received;
+
+	/////shared memory and semaphore sets for CPU_busy
+	
+	/*int key_id_busy = ftok("keyfile", 'B');
+	int key_id_s1 = ftok("keyfile", 'w');
+	int key_id_s2 = ftok("keyfile", 'r');
+	int busyid = shmget(key_id_busy, 256, IPC_CREAT | 0666);
+	if (busyid == -1)
+    {
+        perror("Error in create");
+        exit(-1);
+    }
+    else
+        printf("\nShared memory ID busy= %d\n", busyid);
+        
+	//create 2 semaphore sets 
+	int sem1 = semget(key_id_s1, 1, 0666 | IPC_CREAT);
+    int sem2 = semget(key_id_s2, 1, 0666 | IPC_CREAT);
+
+    if (sem1 == -1 || sem2 == -1)
+    {
+        perror("Error in create sem");
+        exit(-1);
+    }
+    printf("\nsemaphore sets = %d, %d\n", sem1, sem2);
+    
+    //initialize semaphore sets
+    union Semun semun;
+    semun.val = 0; 
+    if (semctl(sem1, 0, SETVAL, semun) == -1 || semctl(sem2, 0, SETVAL, semun) == -1)
+    {
+        perror("Error in semctl");
+        exit(-1);
+    }
+    int *busyaddr = (int*)shmat(busyid, (void *)0, 0); //attach shred memo
+	if ((long)busyaddr == -1)
+	{
+	    perror("Error in attach in server");
+	    exit(-1);
+	}
+	(*busyaddr)=0; //CPU is not busy
+	*/
+	////
 	ready = (Node_priority**)malloc(sizeof(Node_priority*)*n);
 	int size=-1;
 	while(true)
@@ -116,8 +186,43 @@ void HPF()
 		//printf("id: %d",ready[0]->id);
 			    
 		//if CPUs not busy dequeue ->no one executing
-				    //for
+		if(!CPU_busy)
+		{
+		//dequeue
+		Node_priority* dequeued_proc= dequeue_priority(ready, &size); 
+		///fork
+		
+		int pid=fork();
+      	if (pid==-1)
+     	{
+      		perror("couldn't fork process of id \n");
+      		exit(-1);
+		}
+		else if (pid==0) //parent 
+     	{
+      		printf("parent: next cycle\n");
+      		/*int x, exit_code;
+      		wait(&x);
+      		if(!(x & 0x00FF))
+      		{  //terminated normally
+  	    		exit_code=x>>8; //getting exit code
+  	    		printf("exit %d\n",exit_code);
+  	    	}*/
+		   int rec_val = msgrcv(msgq_ready, &CPU_busy, sizeof(CPU_busy), 0, IPC_NOWAIT);
+				if (rec_val == -1 && errno==ENOMSG)
+				    printf("not changed yet\n");
+      		
+		}
+		else //process (child)
+     	{
+      		perror("started process of id \n");
+      		int length = snprintf( NULL, 0, "%d", dequeued_proc->runningTime );
+			str = malloc( length + 1 );
+			snprintf( str, length + 1, "%d", dequeued_proc->runningTime );
+      		execlp("./process.out", "process.out", NULL);
+		}
 				    
+		}		    
 				    
 				    
 	}
@@ -127,6 +232,8 @@ void clearResources(int signum)
 {
   /*for (int i=0; i<3; i++)
    	printf("id: %d\n",ready[i]->id);*/
+   	free(str);
+   	msgctl(msgq_busy, IPC_RMID, 0);
    	kill(getpid(),SIGKILL);
    	
 }

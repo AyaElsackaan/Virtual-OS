@@ -123,7 +123,7 @@ int main(int argc, char * argv[])
     		x=getClk();
     	}
     	
-    	int send_val = msgsnd(msgq_ready, &processes[i], 			sizeof(processes[i]), !IPC_NOWAIT); 
+    	int send_val = msgsnd(msgq_ready, &processes[i],sizeof(processes[i]), !IPC_NOWAIT); 
 
 		if (send_val == -1)
 	    	perror("Errror in send");
