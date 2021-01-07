@@ -108,19 +108,25 @@ int main(int argc, char * argv[])
     printf("Message Queue ID  (ready)= %d\n", msgq_ready);
 
     // 6. Send the information to the scheduler at the appropriate time.
-    
-    
-    for(int i=0; i<n; i++)
+    int i=0;
+    while (i<n)
     {
-      if (arrival[i] <= getClk())
-      {
-        int send_val = msgsnd(msgq_ready, &processes[i], sizeof(processes[i]), !IPC_NOWAIT); 
+    
+    	x=getClk();
+
+    	/*while(processes[i].arrival>x)
+    	{ 
+    		x=getClk();
+    	}*/
+    	printf("will send %d\n", processes[i].id);
+    	int send_val = msgsnd(msgq_ready, &processes[i], 			sizeof(processes[i]), !IPC_NOWAIT); 
 
 		if (send_val == -1)
-		    perror("Errror in send");
-      }
-    }
-    
+	    	perror("Errror in send");
+		
+		i++;
+	}
+   
     // 7. Clear clock resources
     destroyClk(true);
    }

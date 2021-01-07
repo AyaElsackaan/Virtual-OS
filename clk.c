@@ -30,16 +30,19 @@ int main(int argc, char * argv[])
         perror("Error in creating shm!");
         exit(-1);
     }
+    
     int * shmaddr = (int *) shmat(shmid, (void *)0, 0);
     if ((long)shmaddr == -1)
     {
         perror("Error in attaching the shm in clock!");
         exit(-1);
     }
+    printf("clk attached\n");
     *shmaddr = clk; /* initialize shared memory */
     while (1)
     {
         sleep(1);
         (*shmaddr)++;
+         printf("clk loop\n");
     }
 }

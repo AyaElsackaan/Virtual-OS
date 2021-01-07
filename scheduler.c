@@ -31,14 +31,18 @@ printf("\n started\n\n");printf("\n arguments=%d \n\n",argc);
     printf("Message Queue ID  (ready)= %d\n", msgq_ready);
 
 	//read from msg queue
-	P_msgbuff newProcess;
+	while(true)
+	{
+		P_msgbuff newProcess;
 	
-	int rec_val = msgrcv(msgq_ready, &newProcess, sizeof(newProcess),0, !IPC_NOWAIT);
+		int rec_val = msgrcv(msgq_ready, &newProcess, sizeof(newProcess),0, !IPC_NOWAIT);
 
 				if (rec_val == -1)
 				    perror("Error in receive");
 				else
-				    printf("\nMessage received from server: %d of type %ld\n", newProcess.id);
+				    printf("\nMessage received from server: %d\n", newProcess.id);
+	}
+	
 	//add to data structure
 	
     if (algo == 3) //RR
