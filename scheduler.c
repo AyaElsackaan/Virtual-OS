@@ -1,5 +1,5 @@
 #include "headers.h"
-
+#include "data_structures.h"
 /*arguments:
  * 	1:algo 
  *	2:time slot
@@ -7,19 +7,54 @@
  */
 int main(int argc, char * argv[])
 {
+	initClk();
+printf("\n started\n\n");printf("\n arguments=%d \n\n",argc);
 	//TODO implement the scheduler :) 
-	printf("\nstarted\n\n");
-    initClk();
-    printf("%d ", argc);
-    for(int i=0; i<argc; i++)
-    {
-    printf("%d \n", atoi(argv[0]));
-    }
-    
-    int algo= atoi(argv[1]);
+	
+	//command line arguments
+	int algo= atoi(argv[1]);
     int timeslot=atoi(argv[2]);
     int n=atoi(argv[3]);
-     
+    printf("%d %d %d\n",algo, timeslot, n);
+    
+	//get msg queue
+	key_t ready_id; 
+
+    ready_id = ftok("keyfile", 'R');  //unique
+    
+    int msgq_ready = msgget(ready_id, 0666 | IPC_CREAT);
+    if (msgq_ready == -1)
+    {
+        perror("Error in creating ready");
+        exit(-1);
+    }
+    printf("Message Queue ID  (ready)= %d\n", msgq_ready);
+
+	//read from msg queue
+	P_msgbuff newProcess;
+	
+	int rec_val = msgrcv(msgq_ready, &newProcess, sizeof(newProcess),0, !IPC_NOWAIT);
+
+				if (rec_val == -1)
+				    perror("Error in receive");
+				else
+				    printf("\nMessage received from server: %d of type %ld\n", newProcess.id);
+	//add to data structure
+	
+    if (algo == 3) //RR
+    {
+      Node_circular *ready_front=NULL;
+      Node_circular *ready_rear=NULL;
+    }
+    else //HPF or SRTN
+    {
+      Node_priority *ready = (Node_priority*)malloc(sizeof(Node_priority)*n);
+    }
+	//every clk--> if no one working :dequeue
+	//fork new process
+	//wait 
+	//repeat till msg queue is empty
+	 
     //PCB : id, run time, remainig, state, waiting
     int id[n];
     int arrival[n];
@@ -29,28 +64,7 @@ int main(int argc, char * argv[])
     int remaining_time[n];
     char status[n]; //R:running, T:terminated, P: paused
     
-    int j=4;
-     for(int i=0; i<n; i++)
- 	 {  	
- 	 	id[i]=atoi(argv[j]);
- 	   	j++;
- 	 }
-	 for(int i=0; i<n; i++)
-     {
-    	arrival[i]=atoi(argv[j]);
-	   	j++;
-     }
-     for(int i=0; i<n; i++)
- 	 {
- 	    run[i]=atoi(argv[j]);
- 	   	j++;
-     }
-     for(int i=0; i<n; i++)
-     {
- 	   	priority[i]=atoi(argv[j]);
- 	   	j++;
-     }
-     
+
      
  	    
     

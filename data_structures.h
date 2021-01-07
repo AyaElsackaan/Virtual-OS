@@ -1,4 +1,8 @@
-#include "headers.h"
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <stdio.h>
 
 
 typedef struct node_p { 

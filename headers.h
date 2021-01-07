@@ -18,6 +18,14 @@ typedef short bool;
 
 #define SHKEY 300
 
+typedef struct Pmsgbuff
+{
+    int id;
+    int arrival;
+    int run;
+    int priority;
+    int memory;
+}P_msgbuff;
 
 ///==============================
 //don't mess with this variable//

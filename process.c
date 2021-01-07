@@ -4,7 +4,7 @@
 int remainingtime;
 
 //void pause(int signum);
-//void resume(int signum); 
+void resume(int signum); 
 
 /*arguments:
 *	1: running time
@@ -15,7 +15,7 @@ int main(int agrc, char * argv[])
 {
 //running time,id,
 	//signal(SIGUSR1,pause);
-	//signal(SIGUSR2,resume);
+	signal(SIGUSR2,resume);
     initClk();
     int runningtime= atoi(argv[1]);
     
@@ -41,11 +41,12 @@ void pause(int signum)
 {
 
 	exit(remainingtime); //paused
-}
+}*/
 void resume(int signum)
 {
-	//relaod state
+	printf("\nresumed\n");
+	exit(remainingtime);
 }
-*/
+
 
 
