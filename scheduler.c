@@ -28,7 +28,7 @@ printf("\n started\n\n");printf("\n arguments=%d \n\n",argc);
         perror("Error in creating ready");
         exit(-1);
     }
-    printf("Message Queue ID  (ready)= %d\n", msgq_ready);
+    printf("Message Queue ID  (ready) sched= %d\n", msgq_ready);
 
 	//read from msg queue
 	while(true)

@@ -5,7 +5,7 @@
 void clearResources(int);
 int getlines();
 void readfile(int *id,int *arrival,int *run, int *priority, int lines);
-
+int msgq_ready;
 int main(int argc, char * argv[])
 {
     signal(SIGINT, clearResources);
@@ -99,7 +99,7 @@ int main(int argc, char * argv[])
     
     ready_id = ftok("keyfile", 'R');  //unique
 
-    int msgq_ready = msgget(ready_id, 0666 | IPC_CREAT); 
+    msgq_ready = msgget(ready_id, 0666 | IPC_CREAT); 
     if (msgq_ready == -1)
     {
         perror("Error in creating ready");
@@ -118,14 +118,15 @@ int main(int argc, char * argv[])
     	{ 
     		x=getClk();
     	}*/
-    	printf("will send %d\n", processes[i].id);
+    	
     	int send_val = msgsnd(msgq_ready, &processes[i], 			sizeof(processes[i]), !IPC_NOWAIT); 
 
 		if (send_val == -1)
 	    	perror("Errror in send");
-		
+		printf("will send %d\n", processes[i].id);
 		i++;
 	}
+   
    
     // 7. Clear clock resources
     destroyClk(true);
@@ -135,6 +136,8 @@ int main(int argc, char * argv[])
 void clearResources(int signum)
 {
     //TODO Clears all resources in case of interruption
+    //delete msg queue
+   msgctl(msgq_ready, IPC_RMID, 0);
     kill(getpid(),SIGKILL);
 }
 
