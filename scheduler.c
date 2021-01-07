@@ -41,9 +41,10 @@ printf("\n started\n\n");printf("\n arguments=%d \n\n",argc);
 				    perror("Error in receive");
 				else
 				    printf("\nMessage received from server: %d\n", newProcess.id);
+				    //add to data structure//
 	}
 	
-	//add to data structure
+	
 	
     if (algo == 3) //RR
     {
