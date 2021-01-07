@@ -24,7 +24,7 @@ typedef struct Pmsgbuff
     int arrival;
     int run;
     int priority;
-    int memory;
+    //int memory;
 }P_msgbuff;
 
 ///==============================

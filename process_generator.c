@@ -84,6 +84,7 @@ int main(int argc, char * argv[])
     int x = getClk();
     printf("current time is %d\n", x);
     // TODO Generation Main Loop
+    
     // 5. Create a data structure for processes and provide it with its parameters.
     P_msgbuff processes[n];
     for(int i=0; i<n; i++)
@@ -108,16 +109,17 @@ int main(int argc, char * argv[])
     printf("Message Queue ID  (ready)= %d\n", msgq_ready);
 
     // 6. Send the information to the scheduler at the appropriate time.
-    int i=0;
+    int i=0; //loop on processes
     while (i<n)
     {
     
     	x=getClk();
 
-    	/*while(processes[i].arrival>x)
+    	while(processes[i].arrival>x)
     	{ 
+    	//printf("%d",x);
     		x=getClk();
-    	}*/
+    	}
     	
     	int send_val = msgsnd(msgq_ready, &processes[i], 			sizeof(processes[i]), !IPC_NOWAIT); 
 
