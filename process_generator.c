@@ -1,7 +1,9 @@
 #include "headers.h"
 #include "string.h"
 
-
+char* str=NULL;
+char* str2=NULL;
+char* str3=NULL;
 void clearResources(int);
 int getlines();
 void readfile(int *id,int *arrival,int *run, int *priority, int lines);
@@ -56,15 +58,15 @@ int main(int argc, char * argv[])
  	  	
  	  	//arguments for scheduler
  	    int length = snprintf( NULL, 0, "%d", algo );
-		char* str = malloc( length + 1 );
+		str = malloc( length + 1 );
 		snprintf( str, length + 1, "%d", algo );
 		
 		length = snprintf( NULL, 0, "%d", timeslot );
-		char*str2 = malloc( length + 1 );
+		str2 = malloc( length + 1 );
 		snprintf( str2, length + 1, "%d", timeslot );
 		
 		length = snprintf( NULL, 0, "%d", n );
-		char* str3 = malloc( length + 1 );
+		str3 = malloc( length + 1 );
 		snprintf( str3, length + 1, "%d", n );
 		
  	  execlp("./scheduler.out","/scheduler.out",str,str2, str3,NULL);
@@ -139,6 +141,9 @@ void clearResources(int signum)
 {
     //TODO Clears all resources in case of interruption
     //delete msg queue
+    free(str);
+	free(str2);
+	free(str3);
    msgctl(msgq_ready, IPC_RMID, 0);
     kill(getpid(),SIGKILL);
 }

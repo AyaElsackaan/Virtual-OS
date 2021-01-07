@@ -6,7 +6,7 @@
 
 
 typedef struct node_p { 
-    int data; 
+    int id; 
     int priority; // Lower values -> higher priority 
     int runningTime;
   
@@ -82,10 +82,10 @@ void reheapDown(int i, Node_priority **H,int * size)
 } 
 
 //add a node to the heap
-void enqueue_priority(int p, int d, Node_priority **H, int * size, int rTime) 
+void enqueue_priority(int p, int ID, Node_priority **H, int * size, int rTime) 
 { 
 	Node_priority* temp = (Node_priority*)malloc(sizeof(Node_priority)); 
-    temp->data = d; 
+    temp->id = ID; 
     temp->priority = p; 
     temp->runningTime = rTime;
     
@@ -93,6 +93,7 @@ void enqueue_priority(int p, int d, Node_priority **H, int * size, int rTime)
 	H[*size] = temp; 
 
 	reheapUp(*size,H); 
+	printf("enqueued :%d\n",ID);
 } 
 
 //remove the min (highest priority)
