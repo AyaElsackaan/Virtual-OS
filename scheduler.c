@@ -198,28 +198,23 @@ void HPF()
       		perror("couldn't fork process of id \n");
       		exit(-1);
 		}
-		else if (pid==0) //parent 
+		else if (pid==0) //child process 
      	{
-      		printf("parent: next cycle\n");
-      		/*int x, exit_code;
-      		wait(&x);
-      		if(!(x & 0x00FF))
-      		{  //terminated normally
-  	    		exit_code=x>>8; //getting exit code
-  	    		printf("exit %d\n",exit_code);
-  	    	}*/
-		   int rec_val = msgrcv(msgq_ready, &CPU_busy, sizeof(CPU_busy), 0, IPC_NOWAIT);
-				if (rec_val == -1 && errno==ENOMSG)
-				    printf("not changed yet\n");
-      		
-		}
-		else //process (child)
-     	{
-      		perror("started process of id \n");
+      		printf("started process of id \n");
       		int length = snprintf( NULL, 0, "%d", dequeued_proc->runningTime );
 			str = malloc( length + 1 );
 			snprintf( str, length + 1, "%d", dequeued_proc->runningTime );
       		execlp("./process.out", "process.out", NULL);
+		}
+		else //parent scheduler
+     	{
+     		printf("parent: next cycle\n");
+      		
+		   int rec_val = msgrcv(msgq_ready, &CPU_busy, sizeof(CPU_busy), 0, IPC_NOWAIT);
+				if (rec_val == -1 && errno==ENOMSG)
+				    printf("not changed yet\n");
+      		
+      		
 		}
 				    
 		}		    

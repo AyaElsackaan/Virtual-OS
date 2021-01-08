@@ -69,7 +69,7 @@ int main(int argc, char * argv[])
 		str3 = malloc( length + 1 );
 		snprintf( str3, length + 1, "%d", n );
 		
- 	  execlp("./scheduler.out","/scheduler.out",str,str2, str3,NULL);
+ 	  execlp("./scheduler.out","scheduler.out",str,str2, str3,NULL);
  	  
  	  }
  	  else if (flag==2)

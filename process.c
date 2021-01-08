@@ -51,14 +51,15 @@ int main(int agrc, char * argv[])
     }
     int finishtime=getClk()-starttime;
     
-    destroyClk(false);
     
-   	 CPU_busy=1;
+   	 CPU_busy=0;
      send_val = msgsnd(msgq_busy, &CPU_busy, sizeof(CPU_busy), !IPC_NOWAIT); 
 
 		if (send_val == -1)
 		    perror("Error in send");
 		printf("busy=%d\n",CPU_busy);
+		
+		destroyClk(false);
     return 0;
 }
 
