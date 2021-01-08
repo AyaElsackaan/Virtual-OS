@@ -52,7 +52,7 @@ int main(int agrc, char * argv[])
     int finishtime=getClk()-starttime;
     
     
-   	 CPU_busy=0;
+   	 CPU_busy=10;
      send_val = msgsnd(msgq_busy, &CPU_busy, sizeof(CPU_busy), !IPC_NOWAIT); 
 
 		if (send_val == -1)

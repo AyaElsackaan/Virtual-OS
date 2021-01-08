@@ -41,35 +41,7 @@ printf("\n started\n\n");printf("\n arguments=%d \n\n",argc);
     {
     	HPF();
     }
-    /*if (algo == 3) //RR
-    {
-      Node_circular *ready_front=NULL;
-      Node_circular *ready_rear=NULL;
-    }
-    else //HPF or SRTN
-    {
-      Node_priority *ready = (Node_priority*)malloc(sizeof(Node_priority)*n);
-    }*/
-
-	//read from msg queue
-	/*while(true)
-	{
-		P_msgbuff newProcess;
-	
-		int rec_val = msgrcv(msgq_ready, &newProcess, sizeof(newProcess),0, !IPC_NOWAIT);
-
-		if (rec_val == -1)
-		   perror("Error in receive");
-		else
-			printf("\nMessage received from server: %d\n", newProcess.id);
-				    //add to data structure//enqueue
-				    
-				    //if !flag dequeue
-				    //for
-				    
-				    
-				    
-	}*/
+   
 	
 	
 	
@@ -116,7 +88,7 @@ void HPF()
     }
     printf("Message Queue ID  (busy)= %d\n", msgq_busy);
     
-    int CPU_busy=0;
+    int CPU_busy=10;
     
     int send_val = msgsnd(msgq_busy, &CPU_busy, sizeof(CPU_busy), !IPC_NOWAIT); 
 
@@ -124,50 +96,7 @@ void HPF()
 		    perror("Error in send");
 		printf("busy=%d\n",CPU_busy);
 
-	//struct msgbuff msg_sent, msg_received;
 
-	/////shared memory and semaphore sets for CPU_busy
-	
-	/*int key_id_busy = ftok("keyfile", 'B');
-	int key_id_s1 = ftok("keyfile", 'w');
-	int key_id_s2 = ftok("keyfile", 'r');
-	int busyid = shmget(key_id_busy, 256, IPC_CREAT | 0666);
-	if (busyid == -1)
-    {
-        perror("Error in create");
-        exit(-1);
-    }
-    else
-        printf("\nShared memory ID busy= %d\n", busyid);
-        
-	//create 2 semaphore sets 
-	int sem1 = semget(key_id_s1, 1, 0666 | IPC_CREAT);
-    int sem2 = semget(key_id_s2, 1, 0666 | IPC_CREAT);
-
-    if (sem1 == -1 || sem2 == -1)
-    {
-        perror("Error in create sem");
-        exit(-1);
-    }
-    printf("\nsemaphore sets = %d, %d\n", sem1, sem2);
-    
-    //initialize semaphore sets
-    union Semun semun;
-    semun.val = 0; 
-    if (semctl(sem1, 0, SETVAL, semun) == -1 || semctl(sem2, 0, SETVAL, semun) == -1)
-    {
-        perror("Error in semctl");
-        exit(-1);
-    }
-    int *busyaddr = (int*)shmat(busyid, (void *)0, 0); //attach shred memo
-	if ((long)busyaddr == -1)
-	{
-	    perror("Error in attach in server");
-	    exit(-1);
-	}
-	(*busyaddr)=0; //CPU is not busy
-	*/
-	////
 	ready = (Node_priority**)malloc(sizeof(Node_priority*)*n);
 	int size=-1;
 	while(true)
@@ -186,7 +115,7 @@ void HPF()
 		//printf("id: %d",ready[0]->id);
 			    
 		//if CPUs not busy dequeue ->no one executing
-		if(!CPU_busy)
+		if(CPU_busy==10)
 		{
 		//dequeue
 		Node_priority* dequeued_proc= dequeue_priority(ready, &size); 
