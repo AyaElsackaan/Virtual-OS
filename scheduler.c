@@ -70,7 +70,7 @@ printf("\n started\n\n");printf("\n arguments=%d \n\n",argc);
 }
 Node_priority **ready;
 int msgq_busy;
-char*str;
+char*str,*str2;
 void HPF()
 {
 
@@ -113,7 +113,12 @@ void HPF()
 		//enqueue
 		enqueue_priority(newProcess.priority, newProcess.id, ready, &size, newProcess.run) ;
 		//printf("id: %d",ready[0]->id);
-			    
+		
+		//check CPU state
+		rec_val = msgrcv(msgq_ready, &CPU_busy, sizeof(CPU_busy), 0, IPC_NOWAIT);
+				if (rec_val == -1 && errno==ENOMSG)
+				    printf("not changed yet\n");
+				    	    
 		//if CPUs not busy dequeue ->no one executing
 		if(CPU_busy==10)
 		{
@@ -129,17 +134,21 @@ void HPF()
 		}
 		else if (pid==0) //child process 
      	{
-      		printf("started process of id \n");
+      		printf("started process of id %d runing \n",dequeued_proc->id);
       		int length = snprintf( NULL, 0, "%d", dequeued_proc->runningTime );
 			str = malloc( length + 1 );
 			snprintf( str, length + 1, "%d", dequeued_proc->runningTime );
-      		execlp("./process.out", "process.out", NULL);
+			
+			length = snprintf( NULL, 0, "%d", dequeued_proc->id );
+			str2 = malloc( length + 1 );
+			snprintf( str2, length + 1, "%d", dequeued_proc->id );
+      		execlp("./process.out", "process.out",str,str2, NULL);
 		}
 		else //parent scheduler
      	{
      		printf("parent: next cycle\n");
       		
-		   int rec_val = msgrcv(msgq_ready, &CPU_busy, sizeof(CPU_busy), 0, IPC_NOWAIT);
+		   rec_val = msgrcv(msgq_ready, &CPU_busy, sizeof(CPU_busy), 0, !IPC_NOWAIT);
 				if (rec_val == -1 && errno==ENOMSG)
 				    printf("not changed yet\n");
       		
@@ -156,6 +165,7 @@ void clearResources(int signum)
 {
   /*for (int i=0; i<3; i++)
    	printf("id: %d\n",ready[i]->id);*/
+   	free(str2);
    	free(str);
    	msgctl(msgq_busy, IPC_RMID, 0);
    	kill(getpid(),SIGKILL);

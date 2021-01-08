@@ -130,7 +130,8 @@ int main(int argc, char * argv[])
 		printf("will send %d\n", processes[i].id);
 		i++;
 	}
-   
+   //int sid;
+   //wait(&sid); //wait for scheduler
    
     // 7. Clear clock resources
     destroyClk(true);

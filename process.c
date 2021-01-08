@@ -21,7 +21,6 @@ int main(int agrc, char * argv[])
     initClk();
     key_t key_busy;
     
-
 	//create/get message queue
     key_busy = ftok("keyfile", 'B');  //unique
     
@@ -38,21 +37,25 @@ int main(int agrc, char * argv[])
 		if (send_val == -1)
 		    perror("Error in send");
 		printf("busy=%d\n",CPU_busy);
+		
     int runningtime= atoi(argv[1]);
-    
+    int id= atoi(argv[2]);
+     printf("id %d runningtime=%d\n",id,runningtime);
     //TODO it needs to get the remaining time from somewhere
     
     int remainingtime = runningtime;
     int starttime= getClk();
-   
+   printf("id %d start:%d\n",id,starttime);
     while (remainingtime > 0)
     {
          remainingtime=runningtime-(getClk()-starttime);
+         //printf("rem:%d\n",remainingtime);
     }
-    int finishtime=getClk()-starttime;
+    int finishtime=getClk();
     
     
    	 CPU_busy=10;
+   	 printf("id %d before send finishtime=%d\n",id,finishtime);
      send_val = msgsnd(msgq_busy, &CPU_busy, sizeof(CPU_busy), !IPC_NOWAIT); 
 
 		if (send_val == -1)
