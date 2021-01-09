@@ -69,12 +69,35 @@ printf("\n started\n\n");printf("\n arguments=%d \n\n",argc);
     destroyClk(true);
 }
 Node_priority **ready;
-int msgq_busy;
+//int msgq_busy;
+int *busyaddr;
+int busyid;
 char*str,*str2;
 void HPF()
 {
 
- 	key_t key_busy;
+    /////shared memory and semaphore sets for CPU_busy
+	
+	int key_id_busy = ftok("keyfile", 'B');
+	busyid = shmget(key_id_busy, 256, IPC_CREAT | 0666);
+	if (busyid == -1)
+    {
+        perror("Error in create");
+        exit(-1);
+    }
+    else
+        printf("\nShared memory ID busy= %d\n", busyid);
+        
+        busyaddr = (int*)shmat(busyid, (void *)0, 0); //attach shred memo
+	if ((long)busyaddr == -1)
+	{
+	    perror("Error in attach in server");
+	    exit(-1);
+	}
+	(*busyaddr)=0; //CPU is not busy
+
+        
+ 	/*key_t key_busy;
     
 
 	//create/get message queue
@@ -94,7 +117,7 @@ void HPF()
 
 		if (send_val == -1)
 		    perror("Error in send");
-		printf("busy=%d\n",CPU_busy);
+		printf("busy=%d\n",CPU_busy);*/
 
 
 	ready = (Node_priority**)malloc(sizeof(Node_priority*)*n);
@@ -115,12 +138,12 @@ void HPF()
 		//printf("id: %d",ready[0]->id);
 		
 		//check CPU state
-		rec_val = msgrcv(msgq_ready, &CPU_busy, sizeof(CPU_busy), 0, IPC_NOWAIT);
+		/*rec_val = msgrcv(msgq_ready, &CPU_busy, sizeof(CPU_busy), 0, IPC_NOWAIT);
 				if (rec_val == -1 && errno==ENOMSG)
-				    printf("not changed yet\n");
+				    printf("not changed yet\n");*/
 				    	    
 		//if CPUs not busy dequeue ->no one executing
-		if(CPU_busy==10)
+		if(*busyaddr==0)
 		{
 		//dequeue
 		Node_priority* dequeued_proc= dequeue_priority(ready, &size); 
@@ -148,9 +171,9 @@ void HPF()
      	{
      		printf("parent: next cycle\n");
       		
-		   rec_val = msgrcv(msgq_ready, &CPU_busy, sizeof(CPU_busy), 0, !IPC_NOWAIT);
+		   /*rec_val = msgrcv(msgq_ready, &CPU_busy, sizeof(CPU_busy), 0, !IPC_NOWAIT);
 				if (rec_val == -1 && errno==ENOMSG)
-				    printf("not changed yet\n");
+				    printf("not changed yet\n");*/
       		
       		
 		}
@@ -167,7 +190,14 @@ void clearResources(int signum)
    	printf("id: %d\n",ready[i]->id);*/
    	free(str2);
    	free(str);
-   	msgctl(msgq_busy, IPC_RMID, 0);
+   	//msgctl(msgq_busy, IPC_RMID, 0);
+
+   	//dettach
+	shmdt(busyaddr);
+	
+	//delete shared memory
+	shmctl(busyid, IPC_RMID, 0);
+
    	kill(getpid(),SIGKILL);
    	
 }

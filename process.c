@@ -19,10 +19,30 @@ int main(int agrc, char * argv[])
 	printf("process started\n");
 	signal(SIGUSR2,resume);
     initClk();
-    key_t key_busy;
+    
+     //busy id
+    int key_id_busy = ftok("keyfile", 'B');
+	int busyid = shmget(key_id_busy, 256, IPC_CREAT | 0666);
+	if (busyid == -1)
+    {
+        perror("Error in create");
+        exit(-1);
+    }
+    else
+        printf("\nShared memory ID busy= %d\n", busyid);
+        
+        int *busyaddr = (int*)shmat(busyid, (void *)0, 0); //attach shred memo
+	if ((long)busyaddr == -1)
+	{
+	    perror("Error in attach in server");
+	    exit(-1);
+	}
+	(*busyaddr)=1; //CPU is busy
+    //----------------------------------------------------//    
+    //key_t key_busy;
     
 	//create/get message queue
-    key_busy = ftok("keyfile", 'B');  //unique
+    /*key_busy = ftok("keyfile", 'B');  //unique
     
     msgq_busy = msgget(key_busy, 0666 | IPC_CREAT); 
     if (msgq_busy == -1)
@@ -36,7 +56,7 @@ int main(int agrc, char * argv[])
 
 		if (send_val == -1)
 		    perror("Error in send");
-		printf("busy=%d\n",CPU_busy);
+		printf("busy=%d\n",CPU_busy);*/
 		
     int runningtime= atoi(argv[1]);
     int id= atoi(argv[2]);
@@ -52,17 +72,20 @@ int main(int agrc, char * argv[])
          //printf("rem:%d\n",remainingtime);
     }
     int finishtime=getClk();
+    (*busyaddr)=0;
+    printf("id %d ,finish time=%d\n",id,finishtime);
     
-    
-   	 CPU_busy=10;
+   	 /*CPU_busy=10;
    	 printf("id %d before send finishtime=%d\n",id,finishtime);
      send_val = msgsnd(msgq_busy, &CPU_busy, sizeof(CPU_busy), !IPC_NOWAIT); 
 
 		if (send_val == -1)
-		    perror("Error in send");
-		printf("busy=%d\n",CPU_busy);
-		
-		destroyClk(false);
+		    perror("Error in send");*/
+		printf("busy=%d\n",*busyaddr);
+
+    //dettach
+    shmdt(busyaddr);	
+    destroyClk(false);
     return 0;
 }
 
