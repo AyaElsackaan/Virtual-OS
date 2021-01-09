@@ -40,7 +40,7 @@ int main(int agrc, char * argv[])
 	    perror("Error in attach in server");
 	    exit(-1);
 	}
-	(*busyaddr)=1; //CPU is busy
+	//(*busyaddr)=1; //CPU is busy
     //----------------------------------------------------// 
     
     //shared memory of status//

@@ -189,18 +189,28 @@ void HPF()
 
 	ready = (Node_priority**)malloc(sizeof(Node_priority*)*n);
 	int size=-1;
-	while(true)
+	int msg_changed=0;
+	P_msgbuff newProcess;
+	newProcess.id=0;
+	int rec_val = msgrcv(msgq_ready, &newProcess, sizeof(newProcess),0, !IPC_NOWAIT);
+	if (rec_val == -1)
 	{
-		P_msgbuff newProcess;
+         perror("Error in receive");
+         msg_changed=0;
+        }
+	else
+	{
+	printf("\nMessage received from server: %d\n", newProcess.id);
+	msg_changed=1;
+	}
+	while(newProcess.id!=-1)
+	{
 		
+		//printf("message changed=%d", msg_changed);
 		//check if ready queue is empty or not (if empty-->wait, else-->NoWait)
 	
-		int rec_val = msgrcv(msgq_ready, &newProcess, sizeof(newProcess),0, !IPC_NOWAIT);
-
-		if (rec_val == -1)
-		   perror("Error in receive");
-		else
-			printf("\nMessage received from server: %d\n", newProcess.id);
+	if(msg_changed==1)
+	{	
 		//add to data structure
 		id[index_p]= newProcess.id;
 		run[index_p]= newProcess.run;
@@ -209,27 +219,29 @@ void HPF()
 		index_p++;
 		//enqueue
 		enqueue_priority(newProcess.priority, newProcess.id, ready, &size, newProcess.run);
-		//printf("id: %d",ready[0]->id);
+	}	//printf("id: %d",ready[0]->id);
 		
 		//check CPU state
 		/*rec_val = msgrcv(msgq_ready, &CPU_busy, sizeof(CPU_busy), 0, IPC_NOWAIT);
 				if (rec_val == -1 && errno==ENOMSG)
 				    printf("not changed yet\n");*/
-				    	    
+		//printf("empty condition=%d", isempty_priority(size));		    	    
 		//if CPUs not busy dequeue ->no one executing
-		if(*busyaddr==0)
+		if(*busyaddr==0 && !isempty_priority(size))
 		{
 		//dequeue
-		Node_priority* dequeued_proc= dequeue_priority(ready, &size); 
+		Node_priority* dequeued_proc= dequeue_priority(ready, &size);
+		(*busyaddr)=1; 
 		///fork
 		int pid=fork();
-      	if (pid==-1)
-     	{
+      	      if (pid==-1)
+     	       {
       		perror("couldn't fork process of id \n");
       		exit(-1);
 		}
 		else if (pid==0) //child process 
-     	{
+     	      {
+     	       //(*busyaddr)=1;
       		printf("started process of id %d runing \n",dequeued_proc->id);
       		printf("size of id array in schedular=%d\n",index_p);
       		int Pindex=binarySearch(id,0,index_p-1,dequeued_proc->id);
@@ -254,20 +266,49 @@ void HPF()
       		execlp("./process.out", "process.out",str,str2,str3,str4, NULL);
 		}
 		else //parent scheduler
-     	{
+     	     {
      		printf("parent: next cycle\n");
       		
 		   /*rec_val = msgrcv(msgq_ready, &CPU_busy, sizeof(CPU_busy), 0, !IPC_NOWAIT);
 				if (rec_val == -1 && errno==ENOMSG)
 				    printf("not changed yet\n");*/
-      		
-      		
-		}
 				    
-		}		    
+	      }		    
 				    
 				    
 	}
+	if (isempty_priority(size))
+	{
+	rec_val = msgrcv(msgq_ready, &newProcess, sizeof(newProcess),0, !IPC_NOWAIT);
+
+		if (rec_val == -1)
+		{
+		   perror("Error in receive");
+		   msg_changed=0;
+		}
+		else
+		{
+		   printf("\nMessage received from server: %d\n", newProcess.id);
+		   msg_changed=1;
+		}
+        }
+        else
+        {
+        rec_val = msgrcv(msgq_ready, &newProcess, sizeof(newProcess),0, IPC_NOWAIT);
+
+		if (rec_val == -1 && errno==ENOMSG)
+		{
+		    //printf("queue is not empty\n");
+		    msg_changed=0;
+		 }
+		else
+		{
+		   printf("\nMessage received from server: %d\n", newProcess.id);
+		   msg_changed=1;
+		}
+        
+        }
+}
 }
 
 void clearResources(int signum)
@@ -307,5 +348,6 @@ void clearResources(int signum)
    	kill(getpid(),SIGKILL);
    	
 }
+
 
 

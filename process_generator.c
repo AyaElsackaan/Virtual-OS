@@ -129,9 +129,17 @@ int main(int argc, char * argv[])
 	    	perror("Errror in send");
 		printf("will send %d\n", processes[i].id);
 		i++;
-	}
-   //int sid;
-   //wait(&sid); //wait for scheduler
+     }
+   P_msgbuff term;  //end of processes
+    term.id=-1;
+   int send_val = msgsnd(msgq_ready, &term,sizeof(term), !IPC_NOWAIT); 
+		if (send_val == -1)
+	    	perror("Errror in send");
+	printf("will send %d\n", term.id);
+	  
+     
+   int sid;
+   wait(&sid); //wait for scheduler
    
     // 7. Clear clock resources
     destroyClk(true);

@@ -193,5 +193,8 @@ int peek_runningTime(Node_circular * f)
     return f->runningTime; 
 } 
 
-
+int isempty_priority(int size)
+{ 
+ return (size==-1);
+}
 
