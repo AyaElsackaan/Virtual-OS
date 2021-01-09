@@ -246,6 +246,7 @@ void HPF()
 		(*busyaddr)=1; 
 		///fork
 		Pindex=binarySearch(id,0,index_p-1,dequeued_proc->id);
+		
 		int pid=fork();
 		
       	      if (pid==-1)
@@ -338,11 +339,15 @@ void HPF()
       {
        max=Pindex;
       } */ 
-       
+ //printf("last received id=%d\n",newProcess.id);      
 }
-
+ printf("last process id=%d, Pindex=%d\n",id[Pindex],Pindex);
+ printf("status of last process=%c\n",*(stataddr[Pindex]));
+ 
+ 
    while (*(stataddr[Pindex])!='T')
    {
+     printf("last process id=%d, Pindex=%d\n",id[Pindex],Pindex);
      sleep(1);
      //printf("waiting for last process %c\n",*(stataddr[Pindex]));
    }

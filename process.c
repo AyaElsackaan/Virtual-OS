@@ -105,7 +105,7 @@ int main(int agrc, char * argv[])
 
 		if (send_val == -1)
 		    perror("Error in send");*/
-		printf("busy=%d\n",*busyaddr);
+    printf("busy=%d\n",*busyaddr);
 
     //kill(getppid(),SIGUSR1);
     (*stataddr)='T';
