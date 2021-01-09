@@ -18,11 +18,14 @@ int main(int agrc, char * argv[])
 	//signal(SIGUSR1,pause);
 	printf("process started\n");
 	signal(SIGUSR2,resume);
-    initClk();
-    
+       initClk();
+    int runningtime= atoi(argv[1]);
+    int id= atoi(argv[2]);
+    int myindex= atoi(argv[3]);
+    int n= atoi(argv[4]);
      //busy id
     int key_id_busy = ftok("keyfile", 'B');
-	int busyid = shmget(key_id_busy, 256, IPC_CREAT | 0666);
+	int busyid = shmget(key_id_busy, sizeof(int), IPC_CREAT | 0666);
 	if (busyid == -1)
     {
         perror("Error in create");
@@ -38,7 +41,29 @@ int main(int agrc, char * argv[])
 	    exit(-1);
 	}
 	(*busyaddr)=1; //CPU is busy
-    //----------------------------------------------------//    
+    //----------------------------------------------------// 
+    
+    //shared memory of status//
+    int key_id_stat = ftok("keyfile", myindex);
+    int stat_id = shmget(key_id_stat, sizeof(char), IPC_CREAT | 0666);
+	if (stat_id == -1)
+    {
+        perror("Error in create");
+        exit(-1);
+    }
+    else
+        printf("\nShared memory ID status= %d\n", stat_id);
+        
+    char *stataddr = (char*)shmat(stat_id, (void *)0, 0); //attach shared memory
+	if ((long)stataddr == -1)
+	{
+	    perror("Error in attach in server");
+	    exit(-1);
+	}
+	printf("process %d myindex=%d\n",id,myindex);
+    	(*stataddr)='S';
+    	printf("process %d status=%c\n",id,(*stataddr));
+    //----------------------------------------------//	   
     //key_t key_busy;
     
 	//create/get message queue
@@ -58,8 +83,7 @@ int main(int agrc, char * argv[])
 		    perror("Error in send");
 		printf("busy=%d\n",CPU_busy);*/
 		
-    int runningtime= atoi(argv[1]);
-    int id= atoi(argv[2]);
+    
      printf("id %d runningtime=%d\n",id,runningtime);
     //TODO it needs to get the remaining time from somewhere
     
@@ -83,8 +107,12 @@ int main(int agrc, char * argv[])
 		    perror("Error in send");*/
 		printf("busy=%d\n",*busyaddr);
 
+    //kill(getppid(),SIGUSR1);
+    (*stataddr)='T';
+    printf("process %d status=%c\n",id,(*stataddr));
     //dettach
-    shmdt(busyaddr);	
+    shmdt(busyaddr);
+    shmdt(stataddr);	
     destroyClk(false);
     return 0;
 }
