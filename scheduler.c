@@ -133,7 +133,7 @@ printf("\n started\n\n");printf("\n arguments=%d \n\n",argc);
     
     //upon termination release the clock resources.
     
-    destroyClk(true);
+    destroyClk(false);
 }
 Node_priority **ready;
 //int msgq_busy;
@@ -162,8 +162,9 @@ void HPF()
 	    exit(-1);
 	}*/
 	(*busyaddr)=0; //CPU is not busy
-
-        
+        int Pindex;
+        //int counter=0; //track if all processes are forked
+        //int max;
  	/*key_t key_busy;
     
 
@@ -203,12 +204,6 @@ void HPF()
 	printf("\nMessage received from server: %d\n", newProcess.id);
 	msg_changed=1;
 	}
-	while(newProcess.id!=-1)
-	{
-		
-		//printf("message changed=%d", msg_changed);
-		//check if ready queue is empty or not (if empty-->wait, else-->NoWait)
-	
 	if(msg_changed==1)
 	{	
 		//add to data structure
@@ -220,6 +215,23 @@ void HPF()
 		//enqueue
 		enqueue_priority(newProcess.priority, newProcess.id, ready, &size, newProcess.run);
 	}	//printf("id: %d",ready[0]->id);
+	while(newProcess.id!=-1 || !isempty_priority(size))
+	{
+		
+		//printf("message changed=%d", msg_changed);
+		//check if ready queue is empty or not (if empty-->wait, else-->NoWait)
+	
+	/*if(msg_changed==1 && newProcess.id!=-1)
+	{	
+		//add to data structure
+		id[index_p]= newProcess.id;
+		run[index_p]= newProcess.run;
+		priority[index_p]= newProcess.priority;
+		arrival[index_p]= newProcess.arrival;
+		index_p++;
+		//enqueue
+		enqueue_priority(newProcess.priority, newProcess.id, ready, &size, newProcess.run);
+	}*/	//printf("id: %d",ready[0]->id);
 		
 		//check CPU state
 		/*rec_val = msgrcv(msgq_ready, &CPU_busy, sizeof(CPU_busy), 0, IPC_NOWAIT);
@@ -233,7 +245,9 @@ void HPF()
 		Node_priority* dequeued_proc= dequeue_priority(ready, &size);
 		(*busyaddr)=1; 
 		///fork
+		Pindex=binarySearch(id,0,index_p-1,dequeued_proc->id);
 		int pid=fork();
+		
       	      if (pid==-1)
      	       {
       		perror("couldn't fork process of id \n");
@@ -244,7 +258,7 @@ void HPF()
      	       //(*busyaddr)=1;
       		printf("started process of id %d runing \n",dequeued_proc->id);
       		printf("size of id array in schedular=%d\n",index_p);
-      		int Pindex=binarySearch(id,0,index_p-1,dequeued_proc->id);
+      		//int Pindex=binarySearch(id,0,index_p-1,dequeued_proc->id);
       		printf("index in schedular=%d\n",Pindex);
       		
       		int length = snprintf( NULL, 0, "%d", dequeued_proc->runningTime );
@@ -272,12 +286,12 @@ void HPF()
 		   /*rec_val = msgrcv(msgq_ready, &CPU_busy, sizeof(CPU_busy), 0, !IPC_NOWAIT);
 				if (rec_val == -1 && errno==ENOMSG)
 				    printf("not changed yet\n");*/
-				    
+		//counter++;		    
 	      }		    
 				    
 				    
 	}
-	if (isempty_priority(size))
+	if (isempty_priority(size) && newProcess.id!=-1)
 	{
 	rec_val = msgrcv(msgq_ready, &newProcess, sizeof(newProcess),0, !IPC_NOWAIT);
 
@@ -308,7 +322,31 @@ void HPF()
 		}
         
         }
+        if(msg_changed==1 && newProcess.id!=-1)
+	{	
+		//add to data structure
+		id[index_p]= newProcess.id;
+		run[index_p]= newProcess.run;
+		priority[index_p]= newProcess.priority;
+		arrival[index_p]= newProcess.arrival;
+		index_p++;
+		//enqueue
+		enqueue_priority(newProcess.priority, newProcess.id, ready, &size, newProcess.run);
+	}	//printf("id: %d",ready[0]->id);
+	
+      /*if (counter==n-1)
+      {
+       max=Pindex;
+      } */ 
+       
 }
+
+   while (*(stataddr[Pindex])!='T')
+   {
+     sleep(1);
+     //printf("waiting for last process %c\n",*(stataddr[Pindex]));
+   }
+          
 }
 
 void clearResources(int signum)
