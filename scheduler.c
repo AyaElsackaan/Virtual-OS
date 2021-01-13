@@ -33,7 +33,7 @@ int *remaddr;
 int remid;
 
 Node_priority **ready;
-char*str,*str2,*str3,*str4;
+char*str,*str2,*str3,*str4,*str5;
   
 int main(int argc, char * argv[])
 {
@@ -167,6 +167,7 @@ printf("\n started\n\n");printf("\n arguments=%d \n\n",argc);
    	free(str);
    	free(str3);
    	free(str4);
+   	free(str5);
    	
    	free (id);
     	free (arrival);
@@ -324,6 +325,7 @@ void HPF()
 		Pindex=binarySearch(id,0,index_p-1,dequeued_proc->id);
 		
 		int pid=fork();
+		int start_time=getClk();
 		printf("process of id %d after forking command with pid= %d\n",dequeued_proc->id, pid);
       	      if (pid==-1)
      	       {
@@ -354,7 +356,11 @@ void HPF()
 			str4 = malloc( length + 1 );
 			snprintf( str4, length + 1, "%d", n );
 
-      		execlp("./process.out", "process.out",str,str2,str3,str4, NULL);
+      		       length = snprintf( NULL, 0, "%d", start_time );
+			str5 = malloc( length + 1 );
+			snprintf( str5, length + 1, "%d", start_time );
+
+      		execlp("./process.out", "process.out",str,str2,str3,str4,str5, NULL);
 		}
 		else //parent scheduler
      	     {
@@ -472,6 +478,7 @@ void RR(int t_slot)
 	        printf("after enqueue process id=%d\n",q->front->id);
 	//printf("id: %d",ready[0]->id);
 	        int pid=fork();
+	        int start_time=getClk();
 	        printf("after forking pid=%d\n",pid);
 	         if (pid==-1)
 	         {
@@ -485,6 +492,7 @@ void RR(int t_slot)
       		//Pindex=binarySearch(id,0,index_p-1,(*readyf)->id);
       		Pindex=binarySearch(id,0,index_p-1,q->front->id);
       		printf("index in schedular=%d\n",Pindex);
+      		
       		
       		int length = snprintf( NULL, 0, "%d", q->front->runningTime );
 			str = malloc( length + 1 );
@@ -501,19 +509,23 @@ void RR(int t_slot)
 			length = snprintf( NULL, 0, "%d", n );
 			str4 = malloc( length + 1 );
 			snprintf( str4, length + 1, "%d", n );
+			
+			length = snprintf( NULL, 0, "%d", start_time );
+			str5 = malloc( length + 1 );
+			snprintf( str5, length + 1, "%d", start_time );
 
-      		execlp("./process.out", "process.out",str,str2,str3,str4, NULL);
+      		execlp("./process.out", "process.out",str,str2,str3,str4,str5, NULL);
 		}
 		else //parent scheduler
      	     {
      		printf("parent: next cycle\n");
       		
-		    int start_slot = getClk();
+		   // int start_slot = getClk();
 	  		slot = t_slot;
-	  	printf("start_slot=%d\n",start_slot);	
+	  	//printf("start_slot=%d\n",start_slot);	
 	  	printf("t_slot=%d\n",t_slot);	
 	  		
-		while(t_slot!=getClk()-start_slot)
+		while(t_slot!=getClk()-start_time)
 		{
 	  	 //slot = slot - (getClk()-start_slot);
 	  	 //printf("slot in schedular=%d\n",slot);
@@ -522,7 +534,8 @@ void RR(int t_slot)
 		}
 		printf("clock in schedular=%d\n",getClk());
 		kill(pid,SIGUSR1);
-		printf("remaining time of process %d is %d\n",id[Pindex],(*remaddr));	    
+		printf("remaining time of process %d is %d\n",id[Pindex],(*remaddr));
+		sleep(1);	    
 	      }		    
 	         
 	        

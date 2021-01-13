@@ -23,6 +23,7 @@ int main(int agrc, char * argv[])
     int id= atoi(argv[2]);
     int myindex= atoi(argv[3]);
     int n= atoi(argv[4]);
+    int starttime= atoi(argv[5]);
     
     //shared memory of busy id
     int key_id_busy = ftok("keyfile", 'B');
@@ -107,8 +108,8 @@ int main(int agrc, char * argv[])
      printf("id %d runningtime=%d\n",id,runningtime);
     //TODO it needs to get the remaining time from somewhere
     int time_waited_so_far=0;
-    int remainingtime = runningtime;
-    int starttime= getClk();
+    remainingtime = runningtime;
+    //int starttime= getClk();
    printf("id %d start:%d\n",id,starttime);
     while (remainingtime > 0)
     {
@@ -145,6 +146,7 @@ int main(int agrc, char * argv[])
 void pre_empt(int signum)
 {
   printf("process paused clock=%d\n",getClk());
+  printf("process remaining time from process handler=%d\n",remainingtime);
 	//exit(remainingtime); //paused
 }
 void resume(int signum)
