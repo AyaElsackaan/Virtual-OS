@@ -103,7 +103,27 @@ int main(int agrc, char * argv[])
 	    exit(-1);
 	}
 	printf("process %d myindex=%d\n",id,myindex);
+    //--------------------------------------------------------------//
+    //shared memory waiting time//
+   int key_id_wait = ftok("waitingfile", myindex+1);
+    int wait_id = shmget(key_id_wait, sizeof(int), IPC_CREAT | 0666);
+	if (wait_id == -1)
+    {
+        perror("Error in create");
+        exit(-1);
+    }
+    else
+        printf("\nShared memory ID waiting= %d\n", wait_id);
+        
+    int *waitaddr = (int*)shmat(wait_id, (void *)0, 0); //attach shared memory
+	if ((long)waitaddr == -1)
+	{
+	    perror("Error in attach in server");
+	    exit(-1);
+	}
+	printf("process %d myindex=%d\n",id,myindex);
     //--------------------------------------------------------------//	   
+   	   
     //key_t key_busy;
     
 	//create/get message queue
@@ -126,13 +146,13 @@ int main(int agrc, char * argv[])
     
      printf("id %d runningtime=%d\n",id,runningtime);
     //TODO it needs to get the remaining time from somewhere
-    int time_waited_so_far=0;
+    //int time_waited_so_far=0;
     (*remaddr) = runningtime;
     //int starttime= getClk();
    printf("id %d start:%d\n",id,starttime);
     while ((*remaddr) > 0)
     {
-         (*remaddr)=runningtime-(getClk()-starttime)-time_waited_so_far;
+         (*remaddr)=runningtime-(getClk()-starttime-(*waitaddr));
          //remaddr[myindex]=remainingtime;
          //printf("rem:%d\n",remainingtime);
          //(*remaddr)=remainingtime;
@@ -156,7 +176,8 @@ int main(int agrc, char * argv[])
     //dettach
     shmdt(busyaddr);
     shmdt(stataddr);
-    shmdt(remaddr);	
+    shmdt(remaddr);
+    shmdt(waitaddr);	
     destroyClk(false);
     return 0;
 }

@@ -35,6 +35,9 @@ char **stataddr;
 int *rem_id;  
 int **remaddr;
 
+int *wait_id;  
+int **waitaddr;
+
 Node_priority **ready;
 char*str,*str2,*str3,*str4,*str5;
   
@@ -61,6 +64,8 @@ printf("\n started\n\n");printf("\n arguments=%d \n\n",argc);
     stataddr=(char**)malloc(n*sizeof(char*));
     rem_id=(int*)malloc(n*sizeof(int));
     remaddr=(int**)malloc(n*sizeof(int*));
+    wait_id=(int*)malloc(n*sizeof(int));
+    waitaddr=(int**)malloc(n*sizeof(int*));
     printf("%d %d %d\n",algo, timeslot, n);
   
 	//get msg queue
@@ -159,6 +164,30 @@ printf("\n started\n\n");printf("\n arguments=%d \n\n",argc);
 	
      }	
     //----------------------------------------------------------------// 
+     //shared memory waiting time//
+    for (int i=0; i<n; i++)
+    {
+        //printf("entering for loop\n");
+	int key_id_wait = ftok("waitingfile", i+1);
+	wait_id[i] = shmget(key_id_wait, sizeof(int), IPC_CREAT | 0666);
+	printf("waiting id=%d\n",wait_id[i]);
+	if (wait_id[i] == -1)
+    {
+        perror("Error in create");
+        exit(-1);
+    }
+    else
+        printf("\nShared memory ID waiting= %d, index(i)= %d\n", wait_id[i],i);
+        
+        waitaddr[i] = (int*)shmat(wait_id[i], (void *)0, 0); //attach shared memory
+	if ((long)waitaddr[i] == -1)
+	{
+	    perror("Error in attach in server");
+	    exit(-1);
+	}
+	
+     }	
+    //----------------------------------------------------------------// 
     if(algo==1)
     {
     	HPF();
@@ -228,10 +257,14 @@ printf("\n started\n\n");printf("\n arguments=%d \n\n",argc);
 	shmctl(stat_id[i], IPC_RMID, 0);
 	shmdt(remaddr[i]);
 	shmctl(rem_id[i], IPC_RMID, 0);
+	shmdt(waitaddr[i]);
+	shmctl(wait_id[i], IPC_RMID, 0);
         }
         
         free(remaddr);
     	free(rem_id);
+    	free(waitaddr);
+    	free(wait_id);
 	free(stataddr);
     	free(stat_id);
     //kill(getpid(),SIGINT);
@@ -516,6 +549,7 @@ void RR(int t_slot)
 	        int pid=fork();
 	        int start_time=getClk();
 	        printf("after forking pid=%d\n",pid);
+	        Pindex=binarySearch(id,0,index_p-1,q->front->id);
 	         if (pid==-1)
 	         {
       		  perror("couldn't fork process of id \n");
@@ -526,9 +560,9 @@ void RR(int t_slot)
      	          //printf("started process of id %d runing \n",(*readyf)->id);
       		  printf("size of id array in schedular=%d\n",index_p);
       		//Pindex=binarySearch(id,0,index_p-1,(*readyf)->id);
-      		Pindex=binarySearch(id,0,index_p-1,q->front->id);
+      		//Pindex=binarySearch(id,0,index_p-1,q->front->id);
       		printf("index in schedular=%d\n",Pindex);
-      		
+      		(*waitaddr)[Pindex] = 0;
       		
       		int length = snprintf( NULL, 0, "%d", q->front->runningTime );
 			str = malloc( length + 1 );
@@ -571,10 +605,14 @@ void RR(int t_slot)
 		printf("clock in schedular=%d\n",getClk());
 		//kill(pid,SIGUSR1);
 		kill(pid,SIGSTOP);
+		int start_wait=getClk();
 		printf("remaining time of process %d is %d\n",id[Pindex],(*remaddr)[Pindex]);
 		sleep(6);
+		(*waitaddr)[Pindex]=(*waitaddr)[Pindex]+(getClk()-start_wait);
+		printf("waiting time %d\n",(*waitaddr)[Pindex]);
 		kill(pid,SIGCONT);
-		//sleep(5);	    
+		
+		sleep(10);	    
 	      }		    
 	         
 	        
