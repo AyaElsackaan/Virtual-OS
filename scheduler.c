@@ -29,8 +29,11 @@ int busyid;
 int *stat_id;  
 char **stataddr;
 
-int *remaddr;
-int remid;
+//int *remaddr;
+//int remid;
+
+int *rem_id;  
+int **remaddr;
 
 Node_priority **ready;
 char*str,*str2,*str3,*str4,*str5;
@@ -56,6 +59,8 @@ printf("\n started\n\n");printf("\n arguments=%d \n\n",argc);
     status=(char*)malloc(n*sizeof(char));
     stat_id=(int*)malloc(n*sizeof(int));
     stataddr=(char**)malloc(n*sizeof(char*));
+    rem_id=(int*)malloc(n*sizeof(int));
+    remaddr=(int**)malloc(n*sizeof(int*));
     printf("%d %d %d\n",algo, timeslot, n);
   
 	//get msg queue
@@ -92,7 +97,7 @@ printf("\n started\n\n");printf("\n arguments=%d \n\n",argc);
     //shared memory status//
     for (int i=0; i<n; i++)
     {
-	int key_id_stat = ftok("keyfile", i);
+	int key_id_stat = ftok("keyfile", i+1);
 	stat_id[i] = shmget(key_id_stat, sizeof(char), IPC_CREAT | 0666);
 	if (stat_id[i] == -1)
     {
@@ -113,7 +118,7 @@ printf("\n started\n\n");printf("\n arguments=%d \n\n",argc);
 	//(*stataddr)=status;
    //------------------------------------------------------------//
    //shared memory remaining time//
-   int key_id_rem = ftok("keyfile", 'M');
+   /*int key_id_rem = ftok("remainingfile", 'M');
 	remid = shmget(key_id_rem, sizeof(int), IPC_CREAT | 0666);
 	if (remid == -1)
     {
@@ -128,8 +133,32 @@ printf("\n started\n\n");printf("\n arguments=%d \n\n",argc);
 	{
 	    perror("Error in attach in server");
 	    exit(-1);
+	}*/
+   //------------------------------------------------------------//
+   //shared memory remaining time//
+    for (int i=0; i<n; i++)
+    {
+        printf("entering for loop\n");
+	int key_id_rem = ftok("remainingfile", i+1);
+	rem_id[i] = shmget(key_id_rem, sizeof(int), IPC_CREAT | 0666);
+	printf("remaining id=%d\n",rem_id[i]);
+	if (rem_id[i] == -1)
+    {
+        perror("Error in create");
+        exit(-1);
+    }
+    else
+        printf("\nShared memory ID remaining= %d, index(i)= %d\n", rem_id[i],i);
+        
+        remaddr[i] = (int*)shmat(rem_id[i], (void *)0, 0); //attach shared memory
+	if ((long)remaddr[i] == -1)
+	{
+	    perror("Error in attach in server");
+	    exit(-1);
 	}
-   //------------------------------------------------------------//	
+	
+     }	
+    //----------------------------------------------------------------// 
     if(algo==1)
     {
     	HPF();
@@ -159,7 +188,7 @@ printf("\n started\n\n");printf("\n arguments=%d \n\n",argc);
 
      
  	    
-    
+    //sleep(5);
     //upon termination release the clock resources.
     
     destroyClk(false);
@@ -175,31 +204,38 @@ printf("\n started\n\n");printf("\n arguments=%d \n\n",argc);
     	free (priority);
     	free (waiting_time); //start-arrival
     	free (remaining_time);
-    	free (status); 
+    	 
     	
-    	free(stataddr);
-    	free(stat_id);
+    	
     	free(ready);
     	shmdt(busyaddr);
-	
+    	
+    	
 	//delete shared memory
 	shmctl(busyid, IPC_RMID, 0);
 	
 	//dettach
-	shmdt(remaddr);
+	//shmdt(remaddr);
 	
 	//delete shared memory
-	shmctl(remid, IPC_RMID, 0);
-	
+	//shmctl(remid, IPC_RMID, 0);
+        
 	//dettach
 	//delete shared memory
 	for (int i=0; i<n; i++)
 	{
 	shmdt(stataddr[i]);
 	shmctl(stat_id[i], IPC_RMID, 0);
+	shmdt(remaddr[i]);
+	shmctl(rem_id[i], IPC_RMID, 0);
         }
+        
+        free(remaddr);
+    	free(rem_id);
+	free(stataddr);
+    	free(stat_id);
     //kill(getpid(),SIGINT);
-  	
+  	free (status);
     /* P_msgbuff t_end;  //end of processes
     t_end.id=-2;
     int send_val = msgsnd(msgq_ready,&t_end,sizeof(t_end), !IPC_NOWAIT); 
@@ -371,7 +407,7 @@ void HPF()
 				    printf("not changed yet\n");*/
 		//counter++;	
 		
-		printf("remaining time of process %d is %d\n",id[Pindex],(*remaddr));	    
+		printf("remaining time of process %d is %d\n",id[Pindex],(*remaddr)[Pindex]);	    
 	      }		    
 				    
 				    
@@ -533,9 +569,12 @@ void RR(int t_slot)
 	  	 
 		}
 		printf("clock in schedular=%d\n",getClk());
-		kill(pid,SIGUSR1);
-		printf("remaining time of process %d is %d\n",id[Pindex],(*remaddr));
-		sleep(1);	    
+		//kill(pid,SIGUSR1);
+		kill(pid,SIGSTOP);
+		printf("remaining time of process %d is %d\n",id[Pindex],(*remaddr)[Pindex]);
+		sleep(6);
+		kill(pid,SIGCONT);
+		//sleep(5);	    
 	      }		    
 	         
 	        
