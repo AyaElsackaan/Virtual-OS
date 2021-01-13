@@ -137,7 +137,17 @@ int main(int argc, char * argv[])
 	    	perror("Errror in send");
 	printf("will send %d\n", term.id);
 	  
-     
+   /* P_msgbuff t_ending;
+    t_ending.id=0;
+    int rec_val = msgrcv(msgq_ready, &t_ending, sizeof(t_ending),0, !IPC_NOWAIT);
+	if (rec_val == -1)
+	{
+         perror("Error in receive");
+        }
+	else if (t_ending.id == -2) 
+	{
+	  destroyClk(true);
+	}*/
    int sid;
    wait(&sid); //wait for scheduler
    

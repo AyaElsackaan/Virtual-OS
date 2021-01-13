@@ -13,11 +13,16 @@ typedef struct node_p {
 } Node_priority; 
   
 typedef struct node_c {
-	int data;
+	int id;
 	struct node_c* next;
 	int runningTime;
 }Node_circular;
 
+struct Queue_c
+{
+  Node_circular *front;
+  Node_circular *rear;
+};
 
 //get parent
 int parent(int i) 
@@ -130,16 +135,45 @@ void updatePriority(int i, int p, Node_priority **H, int * size)
 
 /////////////////////////////////////Circular Queue for round robin////////////////////////////////////////
 
+struct Queue_c* create_Queue_c()
+{
+  struct Queue_c* q = (struct Queue_c*)malloc(sizeof(struct Queue_c));
+  q->front = NULL;
+  q->rear = NULL;
+   
+  return q;
+} 
 
-void enqueue_circular(int d, Node_circular **f, Node_circular **r,int rTime) //Insert elements in Queue
+void enqueue_circular(struct Queue_c* q, int d, int rTime)
+{
+  Node_circular* n = (Node_circular*)malloc(sizeof(Node_circular));
+  n->id = d;
+  n->runningTime = rTime;
+  n->next = NULL;
+  if (q->rear ==NULL)  //queue is empty
+  {
+    q->front = n;
+    q->rear = n;
+    q->rear->next = q->front;
+  }
+  else
+  {
+    q->rear->next = n;
+    q->rear = n;
+    q->rear->next = q->front;
+  }
+}
+
+/*void enqueue_circular(int d, Node_circular **f, Node_circular **r,int rTime) //Insert elements in Queue
 {
 	Node_circular* n = (Node_circular*)malloc(sizeof(Node_circular));
-	n->data = d;
+	n->id = d;
 	n->runningTime = rTime;
 	n->next = NULL;
 	if((*r==NULL)&&(*f==NULL))
 	{
-		*f = *r = n;
+		*f = n;
+		*r = n;
 		(*r)->next = *f;
 	}
 	else
@@ -148,7 +182,7 @@ void enqueue_circular(int d, Node_circular **f, Node_circular **r,int rTime) //I
 		*r = n;
 		n->next = *f;
 	}
-} 
+}*/ 
 void dequeue_circular(Node_circular **f, Node_circular **r) // Delete an element from Queue
 {
 	Node_circular* t;
@@ -167,7 +201,7 @@ void dequeue_circular(Node_circular **f, Node_circular **r) // Delete an element
 	
 }
 
-void rotate(Node_circular **f, Node_circular **r) // moves first element in queue to the end of queue
+/*void rotate(Node_circular **f, Node_circular **r) // moves first element in queue to the end of queue
 {
 	Node_circular* t;
 	t = *f;
@@ -175,18 +209,18 @@ void rotate(Node_circular **f, Node_circular **r) // moves first element in queu
 		printf("\nQueue is Empty");
 	else if(*f == *r){
 		*f = *r = NULL;
-		enqueue_circular(t->data, f, r, t->runningTime);
+		enqueue_circular(t->id, f, r, t->runningTime);
 		free(t);
 		
 	}
 	else{
 		*f = (*f)->next;
 		(*r)->next = *f;
-		enqueue_circular(t->data, f, r, t->runningTime);
+		enqueue_circular(t->id, f, r, t->runningTime);
 		free(t);
 	}
 	
-}
+}*/
 
 int peek_runningTime(Node_circular * f) 
 { 
@@ -196,5 +230,10 @@ int peek_runningTime(Node_circular * f)
 int isempty_priority(int size)
 { 
  return (size==-1);
+}
+
+int isempty_circular(Node_circular **f, Node_circular **r)
+{ 
+ return ((*f==NULL)&&(*r==NULL));
 }
 

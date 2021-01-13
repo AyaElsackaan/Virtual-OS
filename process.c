@@ -5,7 +5,7 @@ int remainingtime;
 
 //void pause(int signum);
 void resume(int signum); 
-
+void pre_empt(int signum); 
 /*arguments:
 *	1: running time
 *	2: time slot
@@ -15,7 +15,7 @@ int msgq_busy;
 int main(int agrc, char * argv[])
 {
 //running time,id,
-	//signal(SIGUSR1,pause);
+	signal(SIGUSR1,pre_empt);
 	printf("process started\n");
 	signal(SIGUSR2,resume);
        initClk();
@@ -23,7 +23,8 @@ int main(int agrc, char * argv[])
     int id= atoi(argv[2]);
     int myindex= atoi(argv[3]);
     int n= atoi(argv[4]);
-     //busy id
+    
+    //shared memory of busy id
     int key_id_busy = ftok("keyfile", 'B');
 	int busyid = shmget(key_id_busy, sizeof(int), IPC_CREAT | 0666);
 	if (busyid == -1)
@@ -63,7 +64,26 @@ int main(int agrc, char * argv[])
 	printf("process %d myindex=%d\n",id,myindex);
     	(*stataddr)='S';
     	printf("process %d status=%c\n",id,(*stataddr));
-    //----------------------------------------------//	   
+    //----------------------------------------------//	
+    //shared memory remaining time//
+	int key_id_rem = ftok("keyfile", 'M');
+	int remid = shmget(key_id_rem, sizeof(int), IPC_CREAT | 0666);
+	if (remid == -1)
+    {
+        perror("Error in create");
+        exit(-1);
+    }
+    else
+        printf("\nShared memory ID remaining= %d\n", remid);
+        
+        int *remaddr = (int*)shmat(remid, (void *)0, 0); //attach shred memo
+	if ((long)remaddr == -1)
+	{
+	    perror("Error in attach in server");
+	    exit(-1);
+	}
+     
+   //------------------------------------------------------------//	   
     //key_t key_busy;
     
 	//create/get message queue
@@ -86,14 +106,17 @@ int main(int agrc, char * argv[])
     
      printf("id %d runningtime=%d\n",id,runningtime);
     //TODO it needs to get the remaining time from somewhere
-    
+    int time_waited_so_far=0;
     int remainingtime = runningtime;
     int starttime= getClk();
    printf("id %d start:%d\n",id,starttime);
     while (remainingtime > 0)
     {
-         remainingtime=runningtime-(getClk()-starttime);
+         remainingtime=runningtime-(getClk()-starttime)-time_waited_so_far;
+         //remaddr[myindex]=remainingtime;
          //printf("rem:%d\n",remainingtime);
+         (*remaddr)=remainingtime;
+         //printf("remaining time = %d\n",(*remaddr));
     }
     int finishtime=getClk();
     (*busyaddr)=0;
@@ -112,17 +135,18 @@ int main(int agrc, char * argv[])
     printf("process %d status=%c\n",id,(*stataddr));
     //dettach
     shmdt(busyaddr);
-    shmdt(stataddr);	
+    shmdt(stataddr);
+    shmdt(remaddr);	
     destroyClk(false);
     return 0;
 }
 
-/*
-void pause(int signum)
-{
 
-	exit(remainingtime); //paused
-}*/
+void pre_empt(int signum)
+{
+  printf("process paused clock=%d\n",getClk());
+	//exit(remainingtime); //paused
+}
 void resume(int signum)
 {
 	printf("\nresumed\n");
