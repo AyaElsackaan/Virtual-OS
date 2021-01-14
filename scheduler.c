@@ -27,6 +27,8 @@ void RR(int t_slot);
 int index_p=0;
 int *busyaddr;
 int busyid;
+
+int*  start_wait;
     
 int *stat_id;  
 char **stataddr;
@@ -69,6 +71,7 @@ printf("\n started\n\n");printf("\n arguments=%d \n\n",argc);
     remaddr=(int**)malloc(n*sizeof(int*));
     wait_id=(int*)malloc(n*sizeof(int));
     waitaddr=(int**)malloc(n*sizeof(int*));
+    start_wait=(int*)malloc(n*sizeof(int));
     printf("%d %d %d\n",algo, timeslot, n);
   
 	//get msg queue
@@ -121,7 +124,7 @@ printf("\n started\n\n");printf("\n arguments=%d \n\n",argc);
 	    perror("Error in attach in server");
 	    exit(-1);
 	}
-	
+	*(stataddr[i])='W';
      }
 	//(*stataddr)=status;
    //------------------------------------------------------------//
@@ -238,7 +241,7 @@ printf("\n started\n\n");printf("\n arguments=%d \n\n",argc);
     	free (waiting_time); //start-arrival
     	free (remaining_time);
     	 
-    	
+    	free(start_wait);
     	
     	free(ready);
     	shmdt(busyaddr);
@@ -350,7 +353,7 @@ void HPF()
         }
 	else
 	{
-	printf("\nMessage received from server: %d\n", newProcess.id);
+	printf("\nMessage received from server: %d at clk= %d\n", newProcess.id,getClk());
 	msg_changed=1;
 	}
 	if(msg_changed==1)
@@ -444,7 +447,7 @@ void HPF()
 				    printf("not changed yet\n");*/
 		//counter++;	
 		
-		printf("remaining time of process %d is %d\n",id[Pindex],(*remaddr)[Pindex]);	    
+		printf("remaining time of process %d is %d\n",id[Pindex],*(remaddr[Pindex]));	    
 	      }		    
 				    
 				    
@@ -460,7 +463,7 @@ void HPF()
 		}
 		else
 		{
-		   printf("\nMessage received from server: %d\n", newProcess.id);
+		   printf("\nMessage received from server: %d at clk= %d\n", newProcess.id,getClk());
 		   msg_changed=1;
 		}
         }
@@ -475,7 +478,7 @@ void HPF()
 		 }
 		else
 		{
-		   printf("\nMessage received from server: %d\n", newProcess.id);
+		   printf("\nMessage received from server: %d at clk= %d\n", newProcess.id,getClk());
 		   msg_changed=1;
 		}
         
@@ -506,7 +509,7 @@ void HPF()
    {
      printf("last process id=%d, Pindex=%d\n",id[Pindex],Pindex);
      sleep(1);
-     //printf("waiting for last process %c\n",*(stataddr[Pindex]));
+     printf("waiting for last process %c\n",*(stataddr[Pindex]));
    }          
 }
 
@@ -516,6 +519,7 @@ void HPF()
 
 void RR(int t_slot)
 {
+	(*busyaddr)=0;
   struct Queue_c* q = create_Queue_c();
   /*readyf = (Node_circular**)malloc(sizeof(Node_circular*)*n);
   readyr = (Node_circular**)malloc(sizeof(Node_circular*)*n);
@@ -532,8 +536,7 @@ void RR(int t_slot)
         }
 	else
 	{
-	printf("\nMessage received from server: %d\n", newProcess.id);
-	//msg_changed=1;
+	printf("\nMessage received from server: %d at clk= %d\n", newProcess.id,getClk());
 	}
 	
 	       id[index_p]= newProcess.id;
@@ -561,7 +564,7 @@ void RR(int t_slot)
 		 }
 		else
 		{
-		   printf("\nMessage received from server: %d\n", newProcess.id);
+		   printf("\nMessage received from server: %d at clk= %d\n", newProcess.id,getClk());
 		   msg_changed=1;
 		}
         
@@ -578,18 +581,19 @@ void RR(int t_slot)
 		enqueue_circular(q, newProcess.id,newProcess.run);
 	}
 	
-	if(*busyaddr==0 && !isempty_circular(q))
+	if((*busyaddr)==0 && !isempty_circular(q))
 	{
 	
 	Pindex=binarySearch(id,0,index_p-1,q->front->id);
 	(*busyaddr)=1;
+	//printf("status of id %d is %c\n",id[Pindex],*(stataddr[Pindex]));
 	
-	if ((*stataddr)[Pindex]!='P')
+	if (*(stataddr[Pindex])!='P')
 	{
 	        int pid=fork();
 	        int start_time=getClk();
 	        printf("after forking pid=%d\n",pid);
-
+		*(remaddr[Pindex]) = q->front->runningTime;
 	         if (pid==-1)
 	         {
       		  perror("couldn't fork process of id \n");
@@ -602,7 +606,7 @@ void RR(int t_slot)
       		//Pindex=binarySearch(id,0,index_p-1,(*readyf)->id);
       		//Pindex=binarySearch(id,0,index_p-1,q->front->id);
       		printf("index in schedular=%d\n",Pindex);
-      		(*waitaddr)[Pindex] = 0;
+      		*(waitaddr[Pindex]) = 0;
       		
       		int length = snprintf( NULL, 0, "%d", q->front->runningTime );
 			str = malloc( length + 1 );
@@ -629,13 +633,14 @@ void RR(int t_slot)
 		else //parent scheduler
      	     {
      		printf("parent: next cycle\n");
+     		
       		pidarr[Pindex]=pid;
 		   // int start_slot = getClk();
 	  		slot = t_slot;
 	  	//printf("start_slot=%d\n",start_slot);	
 	  	printf("t_slot=%d\n",t_slot);	
-	  	 
-	  	 
+	  	 //sleep(3);
+	  	// printf("status of id %d is %c\n",Pindex,*(stataddr[Pindex]));
 		}
 		
 		printf("clock in schedular=%d\n",getClk());
@@ -644,19 +649,19 @@ void RR(int t_slot)
 		}
 		
 	       
-	       else //han-resume
+	       else //resume -> status==P
 	       {
 	   //    han get el id elly han-continue beeh   
 	       (*busyaddr)=1;
-              (*stataddr)[Pindex]='R';
+              *(stataddr[Pindex])='R';
 	      kill(pidarr[Pindex],SIGCONT);
 	      int start_time=getClk();
-
+	      *(waitaddr[Pindex])=*(waitaddr[Pindex])+(getClk()-start_wait[Pindex]);
 	   
 	      // sleep(10);
 	       }
 	       
-	       while(t_slot!=getClk()-start_time && (*remaddr)[Pindex]>0)
+	       while(t_slot!=getClk()-start_time && *(remaddr[Pindex])>0)
                 {
 	  	 	 if(newProcess.id!=-1)
 	  	 	 {
@@ -670,7 +675,7 @@ void RR(int t_slot)
 		 }
 		else
 		{
-		   printf("\nMessage received from server: %d\n", newProcess.id);
+		   printf("\nMessage received from server: %d at clk= %d\n", newProcess.id,getClk());
 		   msg_changed=1;
 		}
         
@@ -689,25 +694,25 @@ void RR(int t_slot)
 	  	 
 	  	} 
 	       
-	       int start_wait=getClk();
-		printf("remaining time of process %d in schedular is %d\n",id[Pindex],(*remaddr)[Pindex]);
+	       start_wait[Pindex]=getClk();
+		//printf("remaining time of process %d in schedular is %d\n",id[Pindex],*(remaddr[Pindex]));
 //		sleep(6);
-		(*waitaddr)[Pindex]=(*waitaddr)[Pindex]+(getClk()-start_wait);
+		
 		(*busyaddr)=0; 
-		printf("waiting time %d\n",(*waitaddr)[Pindex]);
+		//printf("waiting time %d\n",*(waitaddr[Pindex]));
 		
 	       
 	       
-		if ((*remaddr)[Pindex]<=0)
+		if (*(remaddr[Pindex])<=0)
 		{
 		      (*busyaddr)=0;
-		      (*stataddr)[Pindex]='T';
+		      *(stataddr[Pindex])='T';
 		      dequeue_circular(q);
 		}
 		else
 		{
 		     (*busyaddr)=0;
-		     (*stataddr)[Pindex]='P';
+		     *(stataddr[Pindex])='P';
 		     kill(pidarr[Pindex],SIGSTOP);
 		     rotate(q);
 		}
