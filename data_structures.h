@@ -183,48 +183,48 @@ void enqueue_circular(struct Queue_c* q, int d, int rTime)
 		n->next = *f;
 	}
 }*/ 
-void dequeue_circular(Node_circular **f, Node_circular **r) // Delete an element from Queue
+void dequeue_circular(struct Queue_c* q) // Delete an element from Queue
 {
 	Node_circular* t;
-	t = *f;
-	if((*f==NULL)&&(*r==NULL))
+	t = q->front;
+	if((q->front==NULL)&&(q->rear==NULL))
 		printf("\nQueue is Empty");
-	else if(*f == *r){
-		*f = *r = NULL;
+	else if(q->front == q->rear){
+		q->front= q->rear = NULL;
 		free(t);
 	}
 	else{
-		*f = (*f)->next;
-		(*r)->next = *f;
+		q->front = q->front->next;
+		q->rear->next = q->front;
 		free(t);
 	}
 	
 }
 
-/*void rotate(Node_circular **f, Node_circular **r) // moves first element in queue to the end of queue
+void rotate(struct Queue_c* q) // moves first element in queue to the end of queue
 {
 	Node_circular* t;
-	t = *f;
-	if((*f==NULL)&&(*r==NULL))
+	t = q->front;
+	if((q->front==NULL)&&(q->rear==NULL))
 		printf("\nQueue is Empty");
-	else if(*f == *r){
-		*f = *r = NULL;
-		enqueue_circular(t->id, f, r, t->runningTime);
+	else if(q->front == q->rear){
+		q->front = q->rear = NULL;
+		enqueue_circular(q, t->id, t->runningTime);
 		free(t);
 		
 	}
 	else{
-		*f = (*f)->next;
-		(*r)->next = *f;
-		enqueue_circular(t->id, f, r, t->runningTime);
+		q->front = q->front->next;
+		q->rear->next = q->front;
+		enqueue_circular(q, t->id, t->runningTime);
 		free(t);
 	}
 	
-}*/
+}
 
-int peek_runningTime(Node_circular * f) 
+Node_circular* peek_runningTime(struct Queue_c* q) 
 { 
-    return f->runningTime; 
+    return q->front; 
 } 
 
 int isempty_priority(int size)
@@ -232,8 +232,8 @@ int isempty_priority(int size)
  return (size==-1);
 }
 
-int isempty_circular(Node_circular **f, Node_circular **r)
+int isempty_circular(struct Queue_c* q)
 { 
- return ((*f==NULL)&&(*r==NULL));
+ return ((q->front==NULL)&&(q->rear==NULL));
 }
 

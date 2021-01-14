@@ -13,9 +13,11 @@ void HPF();
  */
 void RR(int t_slot);
  int msgq_ready,timeslot,n;
-  
+  int msg_changed;
+  int start_time;
   //PCB : id, run time, remainig, state, waiting
     int* id;
+    int *pidarr;
     int* arrival;
     int* run;
     int* priority;
@@ -54,6 +56,7 @@ printf("\n started\n\n");printf("\n arguments=%d \n\n",argc);
      timeslot=atoi(argv[2]);
      n=atoi(argv[3]);
     id=(int*)malloc(n*sizeof(int));
+    pidarr=(int*)malloc(n*sizeof(int));
     arrival=(int*)malloc(n*sizeof(int));
     run=(int*)malloc(n*sizeof(int));
     priority=(int*)malloc(n*sizeof(int));
@@ -228,6 +231,7 @@ printf("\n started\n\n");printf("\n arguments=%d \n\n",argc);
    	free(str5);
    	
    	free (id);
+   	free (pidarr);
     	free (arrival);
     	free (run);
     	free (priority);
@@ -335,7 +339,7 @@ void HPF()
 
 	ready = (Node_priority**)malloc(sizeof(Node_priority*)*n);
 	int size=-1;
-	int msg_changed=0;
+	msg_changed=0;
 	P_msgbuff newProcess;
 	newProcess.id=0;
 	int rec_val = msgrcv(msgq_ready, &newProcess, sizeof(newProcess),0, !IPC_NOWAIT);
@@ -394,7 +398,7 @@ void HPF()
 		Pindex=binarySearch(id,0,index_p-1,dequeued_proc->id);
 		
 		int pid=fork();
-		int start_time=getClk();
+		start_time=getClk();
 		printf("process of id %d after forking command with pid= %d\n",dequeued_proc->id, pid);
       	      if (pid==-1)
      	       {
@@ -531,25 +535,61 @@ void RR(int t_slot)
 	printf("\nMessage received from server: %d\n", newProcess.id);
 	//msg_changed=1;
 	}
-	//if(msg_changed==1)
-	//{	
-		//add to data structure
-		id[index_p]= newProcess.id;
+	
+	       id[index_p]= newProcess.id;
 		run[index_p]= newProcess.run;
-		priority[index_p]= newProcess.priority;
+		//priority[index_p]= newProcess.priority;
 		arrival[index_p]= newProcess.arrival;
 		index_p++;
 		//enqueue
 		printf("before enqueue\n");
 		//enqueue_circular(newProcess.id, readyf, readyr, newProcess.run);
 		enqueue_circular(q, newProcess.id, newProcess.run);  
-	//}	
-	        printf("after enqueue process id=%d\n",q->front->id);
-	//printf("id: %d",ready[0]->id);
+		
+	//if(msg_changed==1)
+	//{	
+		//add to data structure
+		
+		while(newProcess.id!=-1 || !isempty_circular(q))
+		{
+		 int rec_val_2 = msgrcv(msgq_ready, &newProcess, sizeof(newProcess),0, IPC_NOWAIT);
+
+		if (rec_val_2 == -1 && errno==ENOMSG)
+		{
+		    //printf("queue is not empty\n");
+		    msg_changed=0;
+		 }
+		else
+		{
+		   printf("\nMessage received from server: %d\n", newProcess.id);
+		   msg_changed=1;
+		}
+        
+       
+        if(msg_changed==1 && newProcess.id!=-1)
+	{	
+		//add to data structure
+		id[index_p]= newProcess.id;
+		run[index_p]= newProcess.run;
+		//priority[index_p]= newProcess.priority;
+		arrival[index_p]= newProcess.arrival;
+		index_p++;
+		//enqueue
+		enqueue_circular(q, newProcess.id,newProcess.run);
+	}
+	
+	if(*busyaddr==0 && !isempty_circular(q))
+	{
+	
+	Pindex=binarySearch(id,0,index_p-1,q->front->id);
+	(*busyaddr)=1;
+	
+	if ((*stataddr)[Pindex]!='P')
+	{
 	        int pid=fork();
 	        int start_time=getClk();
 	        printf("after forking pid=%d\n",pid);
-	        Pindex=binarySearch(id,0,index_p-1,q->front->id);
+
 	         if (pid==-1)
 	         {
       		  perror("couldn't fork process of id \n");
@@ -589,33 +629,92 @@ void RR(int t_slot)
 		else //parent scheduler
      	     {
      		printf("parent: next cycle\n");
-      		
+      		pidarr[Pindex]=pid;
 		   // int start_slot = getClk();
 	  		slot = t_slot;
 	  	//printf("start_slot=%d\n",start_slot);	
 	  	printf("t_slot=%d\n",t_slot);	
-	  		
-		while(t_slot!=getClk()-start_time)
-		{
-	  	 //slot = slot - (getClk()-start_slot);
-	  	 //printf("slot in schedular=%d\n",slot);
-	  	 //printf("clock=%d\n",getClk());
+	  	 
 	  	 
 		}
+		
 		printf("clock in schedular=%d\n",getClk());
 		//kill(pid,SIGUSR1);
-		kill(pid,SIGSTOP);
-		int start_wait=getClk();
-		printf("remaining time of process %d is %d\n",id[Pindex],(*remaddr)[Pindex]);
-		sleep(6);
-		(*waitaddr)[Pindex]=(*waitaddr)[Pindex]+(getClk()-start_wait);
-		printf("waiting time %d\n",(*waitaddr)[Pindex]);
-		kill(pid,SIGCONT);
+	
+		}
 		
-		sleep(10);	    
-	      }		    
-	         
+	       
+	       else //han-resume
+	       {
+	   //    han get el id elly han-continue beeh   
+	       (*busyaddr)=1;
+              (*stataddr)[Pindex]='R';
+	      kill(pidarr[Pindex],SIGCONT);
+	      int start_time=getClk();
+
+	   
+	      // sleep(10);
+	       }
+	       
+	       while(t_slot!=getClk()-start_time && (*remaddr)[Pindex]>0)
+                {
+	  	 	 if(newProcess.id!=-1)
+	  	 	 {
+	  	 
+	  	   int rec_val_1 = msgrcv(msgq_ready, &newProcess, sizeof(newProcess),0, IPC_NOWAIT);
+
+		if (rec_val_1 == -1 && errno==ENOMSG)
+		{
+		    //printf("queue is not empty\n");
+		    msg_changed=0;
+		 }
+		else
+		{
+		   printf("\nMessage received from server: %d\n", newProcess.id);
+		   msg_changed=1;
+		}
+        
+        }
+        if(msg_changed==1 && newProcess.id!=-1)
+	{	
+		//add to data structure
+		id[index_p]= newProcess.id;
+		run[index_p]= newProcess.run;
+		//priority[index_p]= newProcess.priority;
+		arrival[index_p]= newProcess.arrival;
+		index_p++;
+		//enqueue
+		enqueue_circular(q, newProcess.id,newProcess.run);
+	}	//printf("id: %d",ready[0]->id);
+	  	 
+	  	} 
+	       
+	       int start_wait=getClk();
+		printf("remaining time of process %d in schedular is %d\n",id[Pindex],(*remaddr)[Pindex]);
+//		sleep(6);
+		(*waitaddr)[Pindex]=(*waitaddr)[Pindex]+(getClk()-start_wait);
+		(*busyaddr)=0; 
+		printf("waiting time %d\n",(*waitaddr)[Pindex]);
+		
+	       
+	       
+		if ((*remaddr)[Pindex]<=0)
+		{
+		      (*busyaddr)=0;
+		      (*stataddr)[Pindex]='T';
+		      dequeue_circular(q);
+		}
+		else
+		{
+		     (*busyaddr)=0;
+		     (*stataddr)[Pindex]='P';
+		     kill(pidarr[Pindex],SIGSTOP);
+		     rotate(q);
+		}
+		
+	        }
 	        
+	        }
 	 
 	/*while(newProcess.id!=-1 || !isempty_circular(readyf, readyr))
 	{
