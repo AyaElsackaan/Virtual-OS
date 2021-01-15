@@ -44,7 +44,7 @@ int **waitaddr;
 
 Node_priority **ready;
 char*str,*str2,*str3,*str4,*str5;
-
+double* WTA;
 int* start_time_RR;
 int sem1;  
 int main(int argc, char * argv[])
@@ -75,6 +75,7 @@ printf("\n started\n\n");printf("\n arguments=%d \n\n",argc);
     waitaddr=(int**)malloc(n*sizeof(int*));
     start_wait=(int*)malloc(n*sizeof(int));
     start_time_RR=(int*)malloc(n*sizeof(int));
+    WTA=(double*)malloc(n*sizeof(double));
     printf("%d %d %d\n",algo, timeslot, n);
   
 	//get msg queue
@@ -265,7 +266,7 @@ printf("\n started\n\n");printf("\n arguments=%d \n\n",argc);
     	free(start_wait);
     	
     	free(start_time_RR);
-    	
+    	free(WTA);
     	free(ready);
     	shmdt(busyaddr);
     	
@@ -317,12 +318,14 @@ int Pindex=-1;
 //char*str,*str2,*str3,*str4;
 void HPF()
 {
-
+    int start_CPU=getClk();
     FILE * pFile;
     pFile = fopen("scheduler.log", "w");
     fprintf(pFile, "#At time x process y state arr w total z remain y wait k\n");
     /////shared memory and semaphore sets for CPU_busy
-	
+    FILE * pFile2;
+    pFile2 = fopen("scheduler.perf", "w");
+    	
 	/*int key_id_busy = ftok("keyfile", 'B');
 	busyid = shmget(key_id_busy, 256, IPC_CREAT | 0666);
 	if (busyid == -1)
@@ -488,8 +491,9 @@ void HPF()
 		//dequeue
 		if(Pindex>-1)
 		{
-		double WTA= (double)(getClk()-arrival[Pindex])/(double)run[Pindex];
-		fprintf(pFile, "At time %d process %d finished arr %d total %d remain %d wait %d TA %d WTA %.2f\n",getClk(),id[Pindex],arrival[Pindex],run[Pindex],*(remaddr[Pindex]),(start_time-arrival[Pindex]),(getClk()-arrival[Pindex]),WTA);
+		 WTA[Pindex]= (double)(getClk()-arrival[Pindex])/(double)run[Pindex];
+		 waiting_time[Pindex]=start_time-arrival[Pindex];
+		fprintf(pFile, "At time %d process %d finished arr %d total %d remain %d wait %d TA %d WTA %.2f\n",getClk(),id[Pindex],arrival[Pindex],run[Pindex],*(remaddr[Pindex]),waiting_time[Pindex],(getClk()-arrival[Pindex]),WTA[Pindex]);
 		}
 		Node_priority* dequeued_proc= dequeue_priority(ready, &size);
 		(*busyaddr)=1;
@@ -631,6 +635,7 @@ void HPF()
       } */ 
  //printf("last received id=%d\n",newProcess.id);      
 }
+ 
  printf("last process id=%d, Pindex=%d\n",id[Pindex],Pindex);
  printf("status of last process=%c\n",*(stataddr[Pindex]));
  
@@ -641,9 +646,32 @@ void HPF()
      sleep(1);
      printf("waiting for last process %c\n",*(stataddr[Pindex]));
    }  
-   double WTA= (double)(getClk()-arrival[Pindex])/(double)run[Pindex];
-   fprintf(pFile, "At time %d process %d finished arr %d total %d remain %d wait %d TA %d WTA %.2f\n",getClk(),id[Pindex],arrival[Pindex],run[Pindex],*(remaddr[Pindex]),(start_time-arrival[Pindex]),(getClk()-arrival[Pindex]),WTA);
-    fclose(pFile);        
+   WTA[Pindex]= (double)(getClk()-arrival[Pindex])/(double)run[Pindex];
+   waiting_time[Pindex]=start_time-arrival[Pindex];
+   fprintf(pFile, "At time %d process %d finished arr %d total %d remain %d wait %d TA %d WTA %.2f\n",getClk(),id[Pindex],arrival[Pindex],run[Pindex],*(remaddr[Pindex]),waiting_time[Pindex],(getClk()-arrival[Pindex]),WTA[Pindex]);
+    fclose(pFile);   
+    int end_CPU=getClk();
+    int use_time=0;
+    double wta_avg=0;
+    double avg_wait=0;
+    double std_wta=0;
+    for(int i=0; i<n; i++)
+    {
+      use_time+=run[i];
+      wta_avg+=WTA[i];
+      avg_wait+=(double)waiting_time[i];
+    }
+    wta_avg/=(double)n;
+    avg_wait/=(double)n;
+    for(int i=0; i<n; i++)
+    {
+      std_wta+=pow((wta_avg-WTA[i]),2);
+    }
+    std_wta/=(double)n;
+    std_wta=sqrt(std_wta);
+   double CPU_Util =(((double)use_time)/((double)end_CPU-(double)start_CPU))*100;
+   fprintf(pFile2,"CPU Utilization = %.2f%%\nAvg WTA = %.2f\nAvg Waiting = %.2f\nStd WTA = %.2f",CPU_Util,wta_avg,avg_wait,std_wta);
+    fclose(pFile2);      
 }
 
 
