@@ -19,7 +19,7 @@ int main(int agrc, char * argv[])
 //running time,id,
 	signal(SIGUSR1,pre_empt);
 	printf("process started\n");
-	signal(SIGCONT,resume);
+	//signal(SIGCONT,resume);
        initClk();
      runningtime= atoi(argv[1]);
     int id= atoi(argv[2]);

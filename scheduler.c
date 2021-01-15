@@ -291,7 +291,7 @@ printf("\n started\n\n");printf("\n arguments=%d \n\n",argc);
     
     
 }
-int Pindex;
+int Pindex=-1;
 //Node_priority **ready;
 //int msgq_busy;
 //int *busyaddr;
@@ -300,6 +300,9 @@ int Pindex;
 void HPF()
 {
 
+    FILE * pFile;
+    pFile = fopen("scheduler.log", "w");
+    fprintf(pFile, "#At time x process y state arr w total z remain y wait k\n");
     /////shared memory and semaphore sets for CPU_busy
 	
 	/*int key_id_busy = ftok("keyfile", 'B');
@@ -399,15 +402,24 @@ void HPF()
 		if(*busyaddr==0 && !isempty_priority(size))
 		{
 		//dequeue
+		if(Pindex>-1)
+		{
+		double WTA= (double)(getClk()-arrival[Pindex])/(double)run[Pindex];
+		fprintf(pFile, "At time %d process %d finished arr %d total %d remain %d wait %d TA %d WTA %.2f\n",getClk(),id[Pindex],arrival[Pindex],run[Pindex],*(remaddr[Pindex]),(start_time-arrival[Pindex]),(getClk()-arrival[Pindex]),WTA);
+		}
 		Node_priority* dequeued_proc= dequeue_priority(ready, &size);
 		(*busyaddr)=1;
 		//*(remaddr[Pindex]) = dequeued_proc->runningTime;
 		printf("process of id %d is dequeued\n",dequeued_proc->id); 
 		///fork
 		Pindex=binarySearch(id,0,index_p-1,dequeued_proc->id);
-		
+		/*if(Pindex!=0)
+		{
+		  //fprintf(pFile, "At time %d process %d finished arr %d total %d remain %d wait %d\n",getClk(),id[Pindex-1],arrival[Pindex-1],run[Pindex-1],*(remaddr[Pindex-1]),(start_time-arrival[Pindex-1]));
+		}*/
 		int pid=fork();
 		start_time=getClk();
+		fprintf(pFile, "At time %d process %d started arr %d total %d remain %d wait %d\n",getClk(),id[Pindex],arrival[Pindex],run[Pindex],run[Pindex],(start_time-arrival[Pindex]));
 		printf("process of id %d after forking command with pid= %d\n",dequeued_proc->id, pid);
       	      if (pid==-1)
      	       {
@@ -516,7 +528,10 @@ void HPF()
      printf("last process id=%d, Pindex=%d\n",id[Pindex],Pindex);
      sleep(1);
      printf("waiting for last process %c\n",*(stataddr[Pindex]));
-   }          
+   }  
+   double WTA= (double)(getClk()-arrival[Pindex])/(double)run[Pindex];
+   fprintf(pFile, "At time %d process %d finished arr %d total %d remain %d wait %d TA %d WTA %.2f\n",getClk(),id[Pindex],arrival[Pindex],run[Pindex],*(remaddr[Pindex]),(start_time-arrival[Pindex]),(getClk()-arrival[Pindex]),WTA);
+    fclose(pFile);        
 }
 
 
@@ -526,7 +541,7 @@ void HPF()
 void RR(int t_slot)
 {
   (*busyaddr)=0;
-  int cont_time;
+  int cont_time=0;
   int start_slot_time;
   int start_time_s;
   struct Queue_c* q = create_Queue_c();
