@@ -84,7 +84,37 @@ bool allocate(MemoryMap * memmap,int proc_size)
 	return true;
 }
 
+void Merge(MemoryNode* block)
+{
+	if(block->size==MAX_MEMORY)
+		return;
+		
+	if(block->start_at % (2*block->size)) //merge with next
+	{
+		if(block->next->type=='H')
+		{
+			block->size=2*block->size;
+			removeNodeAfter(block);
+			Merge(block);
+		}
+	}
+	else //merge with prev
+	{
+		if(block->prev->type=='H')
+		{
+			block->prev->size=2*block->prev->size;
+			removeNodeAfter(block->prev);
+			Merge(block->prev);
+		}	
+	}
 
+}
+
+void deallocate(MemoryNode* block)
+{
+	block->type='H';
+	Merge(block);
+}
 
 int main()
 {
