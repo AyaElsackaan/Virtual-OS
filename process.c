@@ -12,18 +12,20 @@ void pre_empt(int signum);
 *	3: ID
 */
 int msgq_busy;
+int runningtime;
+int starttime;
 int main(int agrc, char * argv[])
 {
 //running time,id,
 	signal(SIGUSR1,pre_empt);
 	printf("process started\n");
-	signal(SIGUSR2,resume);
+	signal(SIGCONT,resume);
        initClk();
-    int runningtime= atoi(argv[1]);
+     runningtime= atoi(argv[1]);
     int id= atoi(argv[2]);
     int myindex= atoi(argv[3]);
     int n= atoi(argv[4]);
-    int starttime= atoi(argv[5]);
+    starttime= atoi(argv[5]);
     
     //shared memory of busy id
     int key_id_busy = ftok("keyfile", 'B');
@@ -192,6 +194,7 @@ void pre_empt(int signum)
 void resume(int signum)
 {
 	printf("\nresumed\n");
+	printf("running time=%d, start time=%d\n",runningtime,starttime);
 	//exit(remainingtime);
 }
 
