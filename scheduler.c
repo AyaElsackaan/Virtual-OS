@@ -44,6 +44,8 @@ int **waitaddr;
 
 Node_priority **ready;
 char*str,*str2,*str3,*str4,*str5;
+
+int* start_time_RR;
   
 int main(int argc, char * argv[])
 {
@@ -72,6 +74,7 @@ printf("\n started\n\n");printf("\n arguments=%d \n\n",argc);
     wait_id=(int*)malloc(n*sizeof(int));
     waitaddr=(int**)malloc(n*sizeof(int*));
     start_wait=(int*)malloc(n*sizeof(int));
+    start_time_RR=(int*)malloc(n*sizeof(int));
     printf("%d %d %d\n",algo, timeslot, n);
   
 	//get msg queue
@@ -243,6 +246,8 @@ printf("\n started\n\n");printf("\n arguments=%d \n\n",argc);
     	 
     	free(start_wait);
     	
+    	free(start_time_RR);
+    	
     	free(ready);
     	shmdt(busyaddr);
     	
@@ -396,6 +401,7 @@ void HPF()
 		//dequeue
 		Node_priority* dequeued_proc= dequeue_priority(ready, &size);
 		(*busyaddr)=1;
+		//*(remaddr[Pindex]) = dequeued_proc->runningTime;
 		printf("process of id %d is dequeued\n",dequeued_proc->id); 
 		///fork
 		Pindex=binarySearch(id,0,index_p-1,dequeued_proc->id);
@@ -522,7 +528,7 @@ void RR(int t_slot)
   (*busyaddr)=0;
   int cont_time;
   int start_slot_time;
-  int start_time;
+  int start_time_s;
   struct Queue_c* q = create_Queue_c();
   /*readyf = (Node_circular**)malloc(sizeof(Node_circular*)*n);
   readyr = (Node_circular**)malloc(sizeof(Node_circular*)*n);
@@ -594,9 +600,10 @@ void RR(int t_slot)
 	if (*(stataddr[Pindex])!='P')
 	{
 	        int pid=fork();
-	        start_time=getClk();
+	        start_time_RR[Pindex]=getClk();
 	        printf("forking condition entered with Pindex=%d and id=%d\n",Pindex,q->front->id);
 		*(remaddr[Pindex]) = q->front->runningTime;
+		remaining_time[Pindex]=q->front->runningTime;
 	         if (pid==-1)
 	         {
       		  perror("couldn't fork process of id \n");
@@ -627,9 +634,9 @@ void RR(int t_slot)
 			str4 = malloc( length + 1 );
 			snprintf( str4, length + 1, "%d", n );
 			
-			length = snprintf( NULL, 0, "%d", start_time );
+			length = snprintf( NULL, 0, "%d", start_time_RR[Pindex]);
 			str5 = malloc( length + 1 );
-			snprintf( str5, length + 1, "%d", start_time );
+			snprintf( str5, length + 1, "%d", start_time_RR[Pindex]);
 
       		execlp("./process.out", "process.out",str,str2,str3,str4,str5, NULL);
 		}
@@ -659,20 +666,23 @@ void RR(int t_slot)
               *(stataddr[Pindex])='R';
 	      kill(pidarr[Pindex],SIGCONT);
 	       cont_time=getClk();
+	       printf("remaining time of process with id=%d is %d\n",id[Pindex],*(remaddr[Pindex]));
 	      *(waitaddr[Pindex])=*(waitaddr[Pindex])+(getClk()-start_wait[Pindex]);
-	       printf("process of id= %d is resumed at clock= %d with waiting time  	=%d\n",id[Pindex],getClk(),*(waitaddr[Pindex]));
+	       printf("process of id= %d is resumed at clock= %d with waiting time  	=%d and start wait time=%d\n",id[Pindex],getClk(),*(waitaddr[Pindex]),start_wait[Pindex]);
+	       
 	      // sleep(10);
 	       }
 	       
 	       if (*(stataddr[Pindex])=='S' || *(stataddr[Pindex])=='W')
 	       {
-	          start_slot_time = start_time;
+	          start_slot_time = start_time_RR[Pindex];
 	       }
 	       else
 	       {
 	          start_slot_time = cont_time;
 	       }
-	       printf("start_slot_time of id=%d is %d ,start_time=%d, cont_time=%d\n",id[Pindex],start_slot_time,start_time,cont_time);
+	       
+	       printf("start_slot_time of id=%d is %d ,start_time=%d, cont_time=%d\n",id[Pindex],start_slot_time,start_time_RR[Pindex],cont_time);
 	       while(t_slot!=getClk()-start_slot_time && *(remaddr[Pindex])>0)
                 {
 	  	 	 if(newProcess.id!=-1)
@@ -725,15 +735,32 @@ void RR(int t_slot)
 		else
 		{
 		     (*busyaddr)=0;
-		     printf("process id=%d before being stopped,status=%c and remaining time =%d\n",id[Pindex],*(stataddr[Pindex]),*(remaddr[Pindex]));
+		     //printf("process id=%d before being stopped,status=%c and remaining time =%d\n",id[Pindex],*(stataddr[Pindex]),*(remaddr[Pindex]));
 		     *(stataddr[Pindex])='P';
-		     kill(pidarr[Pindex],SIGSTOP);
-		     rotate(q);
-		     printf("process of id=%d is stopped at clock= %d\n",id[Pindex],getClk());
+		     while(*(remaddr[Pindex])!=remaining_time[Pindex]-t_slot)
+		     {
+		       printf("process of id=%d entered the while check loop\n",id[Pindex]);
+		       *(remaddr[Pindex])=(q->front->runningTime)-(getClk()-start_time_RR[Pindex]-*(waitaddr[Pindex]));
+		     }
+		      printf("process id=%d before being stopped,status=%c and remaining time =%d\n",id[Pindex],*(stataddr[Pindex]),*(remaddr[Pindex]));
+		      if(*(remaddr[Pindex])>0)
+		      {
+		        kill(pidarr[Pindex],SIGSTOP);
+		        remaining_time[Pindex]=*(remaddr[Pindex]);
+		        rotate(q);
+		        printf("process of id=%d is stopped at clock= %d\n",id[Pindex],getClk());
+		      }
+		      else
+		      { 
+		        (*busyaddr)=0;
+		        *(stataddr[Pindex])='T';
+		        dequeue_circular(q);
+		        printf("Process of id=%d is dequeued\n",id[Pindex]);
+		      }
 		}
 		
 	        }
-	        
+	        printf("remaining time of process 1 in loop=%d\n",*(remaddr[0]));
 	        }
 	 
 	/*while(newProcess.id!=-1 || !isempty_circular(readyf, readyr))

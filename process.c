@@ -147,7 +147,7 @@ int main(int agrc, char * argv[])
      printf("id %d runningtime=%d\n",id,runningtime);
     //TODO it needs to get the remaining time from somewhere
     //int time_waited_so_far=0;
-    //(*remaddr) = runningtime;
+    (*remaddr) = runningtime;
     //int starttime= getClk();
    printf("id %d start:%d\n",id,starttime);
     while ((*remaddr) > 0)
