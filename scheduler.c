@@ -519,7 +519,10 @@ void HPF()
 
 void RR(int t_slot)
 {
-	(*busyaddr)=0;
+  (*busyaddr)=0;
+  int cont_time;
+  int start_slot_time;
+  int start_time;
   struct Queue_c* q = create_Queue_c();
   /*readyf = (Node_circular**)malloc(sizeof(Node_circular*)*n);
   readyr = (Node_circular**)malloc(sizeof(Node_circular*)*n);
@@ -580,19 +583,19 @@ void RR(int t_slot)
 		//enqueue
 		enqueue_circular(q, newProcess.id,newProcess.run);
 	}
-	
+	Pindex=binarySearch(id,0,index_p-1,q->front->id);
 	if((*busyaddr)==0 && !isempty_circular(q))
 	{
 	
-	Pindex=binarySearch(id,0,index_p-1,q->front->id);
+	//Pindex=binarySearch(id,0,index_p-1,q->front->id);
 	(*busyaddr)=1;
 	//printf("status of id %d is %c\n",id[Pindex],*(stataddr[Pindex]));
 	
 	if (*(stataddr[Pindex])!='P')
 	{
 	        int pid=fork();
-	        int start_time=getClk();
-	        printf("after forking pid=%d\n",pid);
+	        start_time=getClk();
+	        printf("forking condition entered with Pindex=%d and id=%d\n",Pindex,q->front->id);
 		*(remaddr[Pindex]) = q->front->runningTime;
 	         if (pid==-1)
 	         {
@@ -652,16 +655,25 @@ void RR(int t_slot)
 	       else //resume -> status==P
 	       {
 	   //    han get el id elly han-continue beeh   
-	       (*busyaddr)=1;
+	       //(*busyaddr)=1;
               *(stataddr[Pindex])='R';
 	      kill(pidarr[Pindex],SIGCONT);
-	      int start_time=getClk();
+	       cont_time=getClk();
 	      *(waitaddr[Pindex])=*(waitaddr[Pindex])+(getClk()-start_wait[Pindex]);
-	   
+	       printf("process of id= %d is resumed at clock= %d with waiting time  	=%d\n",id[Pindex],getClk(),*(waitaddr[Pindex]));
 	      // sleep(10);
 	       }
 	       
-	       while(t_slot!=getClk()-start_time && *(remaddr[Pindex])>0)
+	       if (*(stataddr[Pindex])=='S' || *(stataddr[Pindex])=='W')
+	       {
+	          start_slot_time = start_time;
+	       }
+	       else
+	       {
+	          start_slot_time = cont_time;
+	       }
+	       printf("start_slot_time of id=%d is %d ,start_time=%d, cont_time=%d\n",id[Pindex],start_slot_time,start_time,cont_time);
+	       while(t_slot!=getClk()-start_slot_time && *(remaddr[Pindex])>0)
                 {
 	  	 	 if(newProcess.id!=-1)
 	  	 	 {
@@ -708,13 +720,16 @@ void RR(int t_slot)
 		      (*busyaddr)=0;
 		      *(stataddr[Pindex])='T';
 		      dequeue_circular(q);
+		      printf("Process of id=%d is dequeued\n",id[Pindex]);
 		}
 		else
 		{
 		     (*busyaddr)=0;
+		     printf("process id=%d before being stopped,status=%c and remaining time =%d\n",id[Pindex],*(stataddr[Pindex]),*(remaddr[Pindex]));
 		     *(stataddr[Pindex])='P';
 		     kill(pidarr[Pindex],SIGSTOP);
 		     rotate(q);
+		     printf("process of id=%d is stopped at clock= %d\n",id[Pindex],getClk());
 		}
 		
 	        }
