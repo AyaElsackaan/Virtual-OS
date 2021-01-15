@@ -556,7 +556,7 @@ void HPF()
 	}
 	if (isempty_priority(size) && newProcess.id!=-1)
 	{
-	rec_val = msgrcv(msgq_ready, &newProcess, sizeof(newProcess),0, !IPC_NOWAIT);
+	/*rec_val = msgrcv(msgq_ready, &newProcess, sizeof(newProcess),0, !IPC_NOWAIT);
 
 		if (rec_val == -1)
 		{
@@ -567,7 +567,35 @@ void HPF()
 		{
 		   printf("\nMessage received from server: %d at clk= %d\n", newProcess.id,getClk());
 		   msg_changed=1;
-		}
+		}*/
+	rec_val=0;
+	down(sem1);
+	while(rec_val!=-1) //change condition
+	{
+	  rec_val = msgrcv(msgq_ready, &newProcess, sizeof(newProcess),0, IPC_NOWAIT);
+	if (rec_val == -1 && errno==ENOMSG)
+	{
+         //perror("Error in receive");
+         msg_changed=0;
+        }
+	else
+	{
+	printf("\nMessage received from server: %d at clk= %d\n", newProcess.id,getClk());
+	msg_changed=1;
+	}
+	if(msg_changed==1)
+	{	
+		//add to data structure
+		id[index_p]= newProcess.id;
+		run[index_p]= newProcess.run;
+		priority[index_p]= newProcess.priority;
+		arrival[index_p]= newProcess.arrival;
+		index_p++;
+		//enqueue
+		enqueue_priority(newProcess.priority, newProcess.id, ready, &size, newProcess.run);
+		//flag=1;
+	}
+	}
         }
         else
         {
