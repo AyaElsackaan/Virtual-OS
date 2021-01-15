@@ -4,6 +4,8 @@
 char* str=NULL;
 char* str2=NULL;
 char* str3=NULL;
+int sem1;
+union Semun semun;
 void clearResources(int);
 int getlines();
 void readfile(int *id,int *arrival,int *run, int *priority, int lines);
@@ -19,7 +21,23 @@ int main(int argc, char * argv[])
     int arrival[n];
     int run[n];
     int priority[n];
-    
+
+    int key_id_s1 = ftok("keyfile", 'X');
+    sem1 = semget(key_id_s1, 1, 0666 | IPC_CREAT);
+    if (sem1 == -1)
+    {
+        perror("Error in create sem");
+        exit(-1);
+    }
+    printf("\nsemaphore sets = %d\n", sem1);
+   
+    semun.val = 0; 
+    if (semctl(sem1, 0, SETVAL, semun) == -1)
+    {
+        perror("Error in semctl");
+        exit(-1);
+    }
+
     readfile(id,arrival,run,priority,n);
     // 2. Ask the user for the chosen scheduling algorithm and its parameters, if there are any.
     int algo;  //1-for HPF, 2-SRTN, 3-RR
@@ -112,7 +130,7 @@ int main(int argc, char * argv[])
 
     // 6. Send the information to the scheduler at the appropriate time.
     int i=0; //loop on processes
-    while (i<n)
+    /*while (i<n)
     {
     
     	x=getClk();
@@ -129,7 +147,29 @@ int main(int argc, char * argv[])
 	    	perror("Errror in send");
 		printf("will send %d\n", processes[i].id);
 		i++;
+     }*/
+     int flag_arr=0;
+    while (i<n)
+    {
+    
+    	x=getClk();
+
+    	while(processes[i].arrival>x)
+    	{ 
+    	//printf("%d",x);
+    		x=getClk();	
+    	}
+    	
+    	int send_val = msgsnd(msgq_ready, &processes[i],sizeof(processes[i]), !IPC_NOWAIT); 
+
+		if (send_val == -1)
+	    	perror("Errror in send");
+		printf("will send %d\n", processes[i].id);
+		i++;
+	if(processes[i].arrival!=processes[i-1].arrival)
+	   up(sem1);
      }
+     
    P_msgbuff term;  //end of processes
     term.id=-1;
    int send_val = msgsnd(msgq_ready, &term,sizeof(term), !IPC_NOWAIT); 
@@ -164,6 +204,7 @@ void clearResources(int signum)
 	free(str2);
 	free(str3);
    msgctl(msgq_ready, IPC_RMID, 0);
+   semctl ( sem1, 0, IPC_RMID, semun);
     kill(getpid(),SIGKILL);
 }
 

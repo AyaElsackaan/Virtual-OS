@@ -46,7 +46,7 @@ Node_priority **ready;
 char*str,*str2,*str3,*str4,*str5;
 
 int* start_time_RR;
-  
+int sem1;  
 int main(int argc, char * argv[])
 {
 	//signal(SIGINT, clearResources);
@@ -197,6 +197,24 @@ printf("\n started\n\n");printf("\n arguments=%d \n\n",argc);
 	
      }	
     //----------------------------------------------------------------// 
+    //semaphores//
+    int key_id_s1 = ftok("keyfile", 'X');
+    sem1 = semget(key_id_s1, 1, 0666 | IPC_CREAT);
+    if (sem1 == -1)
+    {
+        perror("Error in create sem");
+        exit(-1);
+    }
+    printf("\nsemaphore sets = %d\n", sem1);
+   union Semun semun;
+    semun.val = 0; 
+    if (semctl(sem1, 0, SETVAL, semun) == -1)
+    {
+        perror("Error in semctl");
+        exit(-1);
+    }
+    //---------------------------------------------------------------//
+    
     if(algo==1)
     {
     	HPF();
@@ -353,7 +371,7 @@ void HPF()
 	msg_changed=0;
 	P_msgbuff newProcess;
 	newProcess.id=0;
-	int rec_val = msgrcv(msgq_ready, &newProcess, sizeof(newProcess),0, !IPC_NOWAIT);
+	/*int rec_val = msgrcv(msgq_ready, &newProcess, sizeof(newProcess),0, !IPC_NOWAIT);
 	if (rec_val == -1)
 	{
          perror("Error in receive");
@@ -374,7 +392,73 @@ void HPF()
 		index_p++;
 		//enqueue
 		enqueue_priority(newProcess.priority, newProcess.id, ready, &size, newProcess.run);
-	}	//printf("id: %d",ready[0]->id);
+	}*/
+	//int flag=0;
+	//int counter=5;
+	/*while(flag==0) //change condition
+	{
+	  rec_val = msgrcv(msgq_ready, &newProcess, sizeof(newProcess),0, IPC_NOWAIT);
+	if (rec_val == -1 && errno==ENOMSG)
+	{
+         //perror("Error in receive");
+         msg_changed=0;
+        }
+	else
+	{
+	printf("\nMessage received from server: %d at clk= %d\n", newProcess.id,getClk());
+	msg_changed=1;
+	}
+	if(msg_changed==1)
+	{	
+		//add to data structure
+		id[index_p]= newProcess.id;
+		run[index_p]= newProcess.run;
+		priority[index_p]= newProcess.priority;
+		arrival[index_p]= newProcess.arrival;
+		index_p++;
+		//enqueue
+		enqueue_priority(newProcess.priority, newProcess.id, ready, &size, newProcess.run);
+		//flag=1;
+	}
+	/*if (flag==1 && counter>=0)
+	{
+	  flag=0;
+          counter=5;
+	}
+	else if(flag==0 && counter==0)
+	{
+	  flag=1;
+	}
+	counter--;*/
+	//}	//printf("id: %d",ready[0]->id);
+	int rec_val=0;
+	down(sem1);
+	while(rec_val!=-1) //change condition
+	{
+	  rec_val = msgrcv(msgq_ready, &newProcess, sizeof(newProcess),0, IPC_NOWAIT);
+	if (rec_val == -1 && errno==ENOMSG)
+	{
+         //perror("Error in receive");
+         msg_changed=0;
+        }
+	else
+	{
+	printf("\nMessage received from server: %d at clk= %d\n", newProcess.id,getClk());
+	msg_changed=1;
+	}
+	if(msg_changed==1)
+	{	
+		//add to data structure
+		id[index_p]= newProcess.id;
+		run[index_p]= newProcess.run;
+		priority[index_p]= newProcess.priority;
+		arrival[index_p]= newProcess.arrival;
+		index_p++;
+		//enqueue
+		enqueue_priority(newProcess.priority, newProcess.id, ready, &size, newProcess.run);
+		//flag=1;
+	}
+	}
 	while(newProcess.id!=-1 || !isempty_priority(size))
 	{
 		
