@@ -7,6 +7,7 @@ typedef struct memorynode
 	int starts_at;
 	int size;
 	struct memorynode* next;
+	struct memorynode* prev;
 }MemoryNode;
 
 typedef struct memorymap
@@ -22,6 +23,7 @@ MemoryMap* createMap()
 	M->map_head->starts_at=0;
 	M->map_head->size=MAX_MEMORY;
 	M->map_head->next= NULL;
+	M->map_head->prev= NULL;
 	return M;
 }
 MemoryNode* getBlock(MemoryMap * memmap, int s)
@@ -55,11 +57,16 @@ void addNodeAfter (MemoryNode* node_before_me, char t, int st, int s)
 	  n->size=s;
 	  n->next= node_before_me->next;
 	  node_before_me->next=n;
+	  n->prev=node_before_me;
+	  if(n->next!=NULL) //node before me was the last node
+	  	n->next->prev=n;
+	  
 }
 void removeNodeAfter(MemoryNode* node_before_me)
 {
 	MemoryNode* temp= node_before_me->next;
 	node_before_me->next=temp->next;
+	temp->next->prev=node_before_me;
 	free(temp);
 }
 
@@ -143,6 +150,8 @@ int main()
 {
 	MemoryMap* Mem_Map= createMap();
 	printf("created\n");
+	//addNodeAfter (Mem_Map->map_head, 'P', 1, 10);
+	PrintMemory(Mem_Map);
 	if(allocate(Mem_Map,70))
 	{	printf("\nsuccess1\n");
 		PrintMemory(Mem_Map);
