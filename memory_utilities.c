@@ -7,6 +7,7 @@ typedef struct memorynode
 	int starts_at;
 	int size;
 	struct memorynode* next;
+	struct memorynode* prev;
 }MemoryNode;
 
 typedef struct memorymap
@@ -14,28 +15,36 @@ typedef struct memorymap
 	MemoryNode * map_head;
 }MemoryMap;
 
-MemoryNode* createMap()
+MemoryMap* createMap()
 {
-	MemoryNode* n = (MemoryNode*)malloc(sizeof(MemoryNode));
-	n->type='H';
-	n->starts_at=0;
-	n->size=MAX_MEMORY;
-	n->next= NULL;
+	MemoryMap* M = (MemoryMap*)malloc(sizeof(MemoryMap));
+	M->map_head = (MemoryNode*)malloc(sizeof(MemoryNode));
+	M->map_head->type='H';
+	M->map_head->starts_at=0;
+	M->map_head->size=MAX_MEMORY;
+	M->map_head->next= NULL;
+	M->map_head->prev= NULL;
+	return M;
 }
 MemoryNode* getBlock(MemoryMap * memmap, int s)
 {
 	MemoryNode*required_node=memmap->map_head;
+	MemoryNode*traversal_node=memmap->map_head;
 	int min_possible_size=MAX_MEMORY+1; //more than 1024
-	while(required_node!=NULL)
+	
+	while(traversal_node!=NULL)
 	{
-		if(required_node->type=='H' && required_node->size>=s && required_node->size<min_possible_size) //hole of suitable size
+		if(traversal_node->type=='H' && traversal_node->size>=s && traversal_node->size<min_possible_size) //hole of suitable size
 		{
+			required_node=traversal_node;
 			min_possible_size= required_node->size;
 		}
-		required_node=required_node->next;
+		traversal_node=traversal_node->next;
 	}
+	
 	if(min_possible_size==MAX_MEMORY+1) //no node found
 		return NULL;
+
 	return required_node;
 
 }
@@ -48,50 +57,56 @@ void addNodeAfter (MemoryNode* node_before_me, char t, int st, int s)
 	  n->size=s;
 	  n->next= node_before_me->next;
 	  node_before_me->next=n;
+	  n->prev=node_before_me;
+	  if(n->next!=NULL) //node before me was the last node
+	  	n->next->prev=n;
+	  
 }
 void removeNodeAfter(MemoryNode* node_before_me)
 {
 	MemoryNode* temp= node_before_me->next;
 	node_before_me->next=temp->next;
+	if(temp->next!=NULL) //node before me is the last node
+		temp->next->prev=node_before_me;
 	free(temp);
 }
 
-void getNeededSize(MemoryNode*block,int proc_size)
+MemoryNode* getNeededSize(MemoryNode*block,int proc_size)
 {
-	if(block->size<proc_size)
+	if(block->size < proc_size)
 	{
 		//merge &assign
 		block->size=(block->size)*2;
 		removeNodeAfter(block);
 		block->type='P';
-		return ;
+		return block;
 		
 	}
 	
 	//divide
-	block->size=size/2;
-	addNodeAfter (block, 'H', start_at+(size/2), size/2);	
-	getNeededSize(block, proc_size);
+	block->size=block->size/2;
+	addNodeAfter (block, 'H', block->starts_at+(block->size), block->size);	
+	return getNeededSize(block, proc_size);
 }
 
-bool allocate(MemoryMap * memmap,int proc_size)
+MemoryNode* allocate(MemoryMap * memmap,int proc_size)
 {
 	MemoryNode* block= getBlock(memmap, proc_size);
 	if (block==NULL) 
-		return false; //can't allocate
-		
-	 getNeededSize(block,proc_size);
-	return true;
+		return NULL; //can't allocate
+			
+	return getNeededSize(block,proc_size);
 }
 
 void Merge(MemoryNode* block)
 {
 	if(block->size==MAX_MEMORY)
-		return;
-		
-	if(block->start_at % (2*block->size)) //merge with next
 	{
-		if(block->next->type=='H')
+		return;
+	}	
+	if(block->starts_at % (2*block->size)==0) //merge with next
+	{
+		if(block->next->type=='H'&&block->next->size==block->size)
 		{
 			block->size=2*block->size;
 			removeNodeAfter(block);
@@ -100,7 +115,7 @@ void Merge(MemoryNode* block)
 	}
 	else //merge with prev
 	{
-		if(block->prev->type=='H')
+		if(block->prev->type=='H'&&block->prev->size==block->size)
 		{
 			block->prev->size=2*block->prev->size;
 			removeNodeAfter(block->prev);
@@ -116,15 +131,70 @@ void deallocate(MemoryNode* block)
 	Merge(block);
 }
 
-int main()
-{
 
-int* mem_map= (int*) malloc(1024*sizeof(int));
-for (int i=0; i<1024; i++)
+void PrintMemory(MemoryMap* M)
 {
-	mem_map[i]=0;
+	MemoryNode* temp=M->map_head;
+	int i=0;
+	while(temp!=NULL)
+	{
+		printf("Node %d type:%c, start:%d, size:%d\n",i,temp->type,temp->starts_at,temp->size);
+		temp=temp->next;
+		i++;
+	}
 }
 
-printf("%d\n",getNeededSize(1024,20));
+int main()
+{
+	MemoryMap* Mem_Map= createMap();
+	printf("created\n");
+	//addNodeAfter (Mem_Map->map_head, 'P', 1, 10);
+	PrintMemory(Mem_Map);
+	
+	MemoryNode* A= allocate(Mem_Map,70);
+	if(A!=NULL)
+	{	printf("\nsuccess1\n");
+		PrintMemory(Mem_Map);
+	}
+	
+	MemoryNode* B=allocate(Mem_Map,35);	
+	if(B!=NULL)
+	{	printf("\nsuccess2\n");
+		PrintMemory(Mem_Map);
+	}
+	
+	MemoryNode* C=allocate(Mem_Map,80);	
+	if(C!=NULL)
+	{	printf("\nsuccess3\n");
+		PrintMemory(Mem_Map);
+	}
+	
+	MemoryNode* D=allocate(Mem_Map,1024);  //no enough space
+	if(D==NULL)
+	{	printf("\nfailed\n");
+		PrintMemory(Mem_Map);
+	}	
+	
+	deallocate(A);
+	printf("\nsuccess\n");
+	PrintMemory(Mem_Map);
+	
+	D=allocate(Mem_Map,60);
+	if(D!=NULL)
+	{	printf("\nsuccess\n");
+		PrintMemory(Mem_Map);
+	}
+		
+	deallocate(B);
+	printf("\nsuccess\n");
+	PrintMemory(Mem_Map);
+	
+	deallocate(D);
+	printf("\nsuccess\n");
+	PrintMemory(Mem_Map);
+	
+	deallocate(C);
+	printf("\nsuccess\n");
+	PrintMemory(Mem_Map);
 	return 0;
 }
