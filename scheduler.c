@@ -601,7 +601,7 @@ void HPF()
 	}
 	}
         }
-        else
+        else //check if something has arrived
         {
         rec_val = msgrcv(msgq_ready, &newProcess, sizeof(newProcess),0, IPC_NOWAIT);
 
@@ -609,6 +609,7 @@ void HPF()
 		{
 		    //printf("queue is not empty\n");
 		    msg_changed=0;
+		    //down (sem1); //?????????????????????????????????
 		 }
 		else
 		{
