@@ -1,6 +1,7 @@
 #include "headers.h"
 #include "data_structures.h"
 #include <errno.h>
+#include "memory_utilities.h"
 extern int errno ;
 
 //void clearResources(int);
@@ -358,6 +359,7 @@ void HPF()
 	msg_changed=0;
 	P_msgbuff newProcess;
 	newProcess.id=0;
+	MemoryNode* memory_location =NULL; //location of the current process 
 	/*int rec_val = msgrcv(msgq_ready, &newProcess, sizeof(newProcess),0, !IPC_NOWAIT);
 	if (rec_val == -1)
 	{
@@ -419,7 +421,7 @@ void HPF()
 	counter--;*/
 	//}	//printf("id: %d",ready[0]->id);
 	int rec_val=0;
-	down(sem1);
+	down(sem1); //all processes at the same time have been sent
 	while(rec_val!=-1) //change condition
 	{
 	  rec_val = msgrcv(msgq_ready, &newProcess, sizeof(newProcess),0, IPC_NOWAIT);
@@ -442,7 +444,7 @@ void HPF()
 		arrival[index_p]= newProcess.arrival;
 		index_p++;
 		//enqueue
-		enqueue_priority(newProcess.priority, newProcess.id, ready, &size, newProcess.run);
+		enqueue_priority(newProcess.priority, newProcess.id, ready, &size, newProcess.run,newProcess.memsize);
 		//flag=1;
 	}
 	}
@@ -472,6 +474,12 @@ void HPF()
 		//if CPUs not busy dequeue ->no one executing
 		if(*busyaddr==0 && !isempty_priority(size))
 		{
+			if(memory_location!=NULL)
+			{
+			  deallocate(memory_location);
+			  printf("\ndeallocated\n");
+			 	PrintMemory(Mem_Map);
+			 } 
 		//dequeue
 		if(Pindex>-1)
 		{
@@ -484,11 +492,13 @@ void HPF()
 		//*(remaddr[Pindex]) = dequeued_proc->runningTime;
 		
 		//try to allocate memory
-		MemoryNode* memory_location= allocate(Mem_Map,dequeued_proc->memory_size);
+		memory_location= allocate(Mem_Map,dequeued_proc->memory_size);
 		
 		/*since all processes are <=256 bytes so this is the only case*/
 		if (memory_location!=NULL) //successful memory allocation
 		{
+			printf("\nallocated\n");
+			PrintMemory(Mem_Map);
 			printf("process of id %d is dequeued\n",dequeued_proc->id); 
 			///fork
 			Pindex=binarySearch(id,0,index_p-1,dequeued_proc->id);
@@ -588,7 +598,7 @@ void HPF()
 		arrival[index_p]= newProcess.arrival;
 		index_p++;
 		//enqueue
-		enqueue_priority(newProcess.priority, newProcess.id, ready, &size, newProcess.run);
+		enqueue_priority(newProcess.priority, newProcess.id, ready, &size, newProcess.run,newProcess.memsize);
 		//flag=1;
 	}
 	}
@@ -619,7 +629,7 @@ void HPF()
 		arrival[index_p]= newProcess.arrival;
 		index_p++;
 		//enqueue
-		enqueue_priority(newProcess.priority, newProcess.id, ready, &size, newProcess.run);
+		enqueue_priority(newProcess.priority, newProcess.id, ready, &size, newProcess.run,newProcess.memsize);
 	}	//printf("id: %d",ready[0]->id);
 	
       /*if (counter==n-1)
@@ -639,6 +649,15 @@ void HPF()
      sleep(1);
      printf("waiting for last process %c\n",*(stataddr[Pindex]));
    }  
+    //deallocate last process from memory
+   if(memory_location!=NULL)
+	{
+		deallocate(memory_location);
+	    printf("\ndeallocated\n");
+		PrintMemory(Mem_Map);
+	} 
+	
+	//output files
    WTA[Pindex]= (double)(getClk()-arrival[Pindex])/(double)run[Pindex];
    waiting_time[Pindex]=start_time-arrival[Pindex];
    fprintf(pFile, "At time %d process %d finished arr %d total %d remain %d wait %d TA %d WTA %.2f\n",getClk(),id[Pindex],arrival[Pindex],run[Pindex],*(remaddr[Pindex]),waiting_time[Pindex],(getClk()-arrival[Pindex]),WTA[Pindex]);
@@ -656,6 +675,8 @@ void HPF()
     }
     wta_avg/=(double)n;
     avg_wait/=(double)n;
+    
+    //standard deviation
     for(int i=0; i<n; i++)
     {
       std_wta+=pow((wta_avg-WTA[i]),2);
@@ -712,7 +733,7 @@ void RR(int t_slot)
 		//enqueue
 		printf("before enqueue\n");
 		//enqueue_circular(newProcess.id, readyf, readyr, newProcess.run);
-		enqueue_circular(q, newProcess.id, newProcess.run);  
+		enqueue_circular(q, newProcess.id, newProcess.run,newProcess.memsize);  
 		
 	//if(msg_changed==1)
 	//{	
@@ -743,7 +764,7 @@ void RR(int t_slot)
 		arrival[index_p]= newProcess.arrival;
 		index_p++;
 		//enqueue
-		enqueue_circular(q, newProcess.id,newProcess.run);
+		enqueue_circular(q, newProcess.id,newProcess.run,newProcess.memsize);
 	}
 	Pindex=binarySearch(id,0,index_p-1,q->front->id);
 	if((*busyaddr)==0 && !isempty_circular(q))
@@ -873,7 +894,7 @@ void RR(int t_slot)
 		arrival[index_p]= newProcess.arrival;
 		index_p++;
 		//enqueue
-		enqueue_circular(q, newProcess.id,newProcess.run);
+		enqueue_circular(q, newProcess.id,newProcess.run, newProcess.memsize);
 	}	//printf("id: %d",ready[0]->id);
 	  	 
 	  	} 

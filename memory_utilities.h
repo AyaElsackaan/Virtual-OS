@@ -1,4 +1,9 @@
-#include "headers.h"
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <stdio.h>
+
 #define MAX_MEMORY 1024
 
 typedef struct memorynode
@@ -144,6 +149,7 @@ void PrintMemory(MemoryMap* M)
 	}
 }
 
+/* ////for testing////
 int main()
 {
 	MemoryMap* Mem_Map= createMap();
@@ -197,4 +203,4 @@ int main()
 	printf("\nsuccess\n");
 	PrintMemory(Mem_Map);
 	return 0;
-}
+}*/

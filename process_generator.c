@@ -8,7 +8,7 @@ int sem1;
 union Semun semun;
 void clearResources(int);
 int getlines();
-void readfile(int *id,int *arrival,int *run, int *priority, int lines);
+void readfile(int *id,int *arrival,int *run, int *priority,int*memsize, int lines);
 int msgq_ready;
 int main(int argc, char * argv[])
 {
@@ -39,7 +39,7 @@ int main(int argc, char * argv[])
         exit(-1);
     }
 
-    readfile(id,arrival,run,priority,n);
+    readfile(id,arrival,run,priority,memsize,n);
     // 2. Ask the user for the chosen scheduling algorithm and its parameters, if there are any.
     int algo;  //1-for HPF, 2-SRTN, 3-RR
     int timeslot=0; //parameter for RR

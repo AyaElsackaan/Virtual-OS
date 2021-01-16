@@ -213,14 +213,14 @@ void rotate(struct Queue_c* q) // moves first element in queue to the end of que
 		printf("\nQueue is Empty");
 	else if(q->front == q->rear){
 		q->front = q->rear = NULL;
-		enqueue_circular(q, t->id, t->runningTime);
+		enqueue_circular(q, t->id, t->runningTime,t->memory_size);
 		free(t);
 		
 	}
 	else{
 		q->front = q->front->next;
 		q->rear->next = q->front;
-		enqueue_circular(q, t->id, t->runningTime);
+		enqueue_circular(q, t->id, t->runningTime,t->memory_size);
 		free(t);
 	}
 	
