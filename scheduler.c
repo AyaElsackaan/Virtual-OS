@@ -680,6 +680,14 @@ void HPF()
 
 void RR(int t_slot)
 {
+  int start_CPU=getClk();
+  FILE * pFile;
+    pFile = fopen("scheduler.log", "w");
+    fprintf(pFile, "#At time x process y state arr w total z remain y wait k\n");
+    
+    FILE * pFile2;
+    pFile2 = fopen("scheduler.perf", "w");
+
   (*busyaddr)=0;
   int cont_time=0;
   int start_slot_time;
@@ -756,6 +764,8 @@ void RR(int t_slot)
 	{
 	        int pid=fork();
 	        start_time_RR[Pindex]=getClk();
+	        fprintf(pFile, "At time %d process %d started arr %d total %d remain %d wait %d\n",getClk(),id[Pindex],arrival[Pindex],run[Pindex],run[Pindex],*(waitaddr[Pindex]));
+
 	        printf("forking condition entered with Pindex=%d and id=%d\n",Pindex,q->front->id);
 		*(remaddr[Pindex]) = q->front->runningTime;
 		remaining_time[Pindex]=q->front->runningTime;
@@ -819,8 +829,10 @@ void RR(int t_slot)
 	   //    han get el id elly han-continue beeh   
 	       //(*busyaddr)=1;
               *(stataddr[Pindex])='R';
+              fprintf(pFile, "At time %d process %d resumed arr %d total %d remain %d wait %d\n",getClk(),id[Pindex],arrival[Pindex],run[Pindex],*(remaddr[Pindex]),*(waitaddr[Pindex]));
 	      kill(pidarr[Pindex],SIGCONT);
 	       cont_time=getClk();
+	       
 	       printf("remaining time of process with id=%d is %d\n",id[Pindex],*(remaddr[Pindex]));
 	      *(waitaddr[Pindex])=*(waitaddr[Pindex])+(getClk()-start_wait[Pindex]);
 	       printf("process of id= %d is resumed at clock= %d with waiting time  	=%d and start wait time=%d\n",id[Pindex],getClk(),*(waitaddr[Pindex]),start_wait[Pindex]);
@@ -886,6 +898,9 @@ void RR(int t_slot)
 		      *(stataddr[Pindex])='T';
 		      dequeue_circular(q);
 		      printf("Process of id=%d is dequeued\n",id[Pindex]);
+		      WTA[Pindex]= (double)(getClk()-arrival[Pindex])/(double)run[Pindex];
+   		      //waiting_time[Pindex]=start_time-arrival[Pindex];
+		      fprintf(pFile, "At time %d process %d finished arr %d total %d remain %d wait %d TA %d WTA %.2f\n",getClk(),id[Pindex],arrival[Pindex],run[Pindex],*(remaddr[Pindex]),*(waitaddr[Pindex]),(getClk()-arrival[Pindex]),WTA[Pindex]);
 		}
 		else
 		{
@@ -901,6 +916,8 @@ void RR(int t_slot)
 		      if(*(remaddr[Pindex])>0)
 		      {
 		        kill(pidarr[Pindex],SIGSTOP);
+		        fprintf(pFile, "At time %d process %d paused arr %d total %d remain %d wait %d\n",getClk(),id[Pindex],arrival[Pindex],run[Pindex],*(remaddr[Pindex]),*(waitaddr[Pindex]));
+
 		        remaining_time[Pindex]=*(remaddr[Pindex]);
 		        rotate(q);
 		        printf("process of id=%d is stopped at clock= %d\n",id[Pindex],getClk());
@@ -911,13 +928,37 @@ void RR(int t_slot)
 		        *(stataddr[Pindex])='T';
 		        dequeue_circular(q);
 		        printf("Process of id=%d is dequeued\n",id[Pindex]);
+		        WTA[Pindex]= (double)(getClk()-arrival[Pindex])/(double)run[Pindex];
+		        fprintf(pFile, "At time %d process %d finished arr %d total %d remain %d wait %d TA %d WTA %.2f\n",getClk(),id[Pindex],arrival[Pindex],run[Pindex],*(remaddr[Pindex]),*(waitaddr[Pindex]),(getClk()-arrival[Pindex]),WTA[Pindex]);
 		      }
 		}
 		
 	        }
 	        printf("remaining time of process 1 in loop=%d\n",*(remaddr[0]));
 	        }
-	 
+fclose(pFile);	        
+int end_CPU=getClk();	        
+int use_time=0;
+double wta_avg=0;
+double avg_wait=0;
+double std_wta=0;
+   for(int i=0; i<n; i++)
+    {
+      use_time+=run[i];
+      wta_avg+=WTA[i];
+      avg_wait+=(double)(*(waitaddr[i]));
+    }
+ wta_avg/=(double)n;
+ avg_wait/=(double)n;
+   for(int i=0; i<n; i++)
+    {
+      std_wta+=pow((wta_avg-WTA[i]),2);
+    }
+  std_wta/=(double)n;
+  std_wta=sqrt(std_wta);
+  double CPU_Util =(((double)use_time)/((double)end_CPU-(double)start_CPU))*100;
+   fprintf(pFile2,"CPU Utilization = %.2f%%\nAvg WTA = %.2f\nAvg Waiting = %.2f\nStd WTA = %.2f",CPU_Util,wta_avg,avg_wait,std_wta);	        
+fclose(pFile2);	 
 }
 
 
