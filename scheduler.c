@@ -707,10 +707,10 @@ void RR(int t_slot)
   int start_slot_time;
   int start_time_s;
   struct Queue_c* q = create_Queue_c();
-  /*readyf = (Node_circular**)malloc(sizeof(Node_circular*)*n);
-  readyr = (Node_circular**)malloc(sizeof(Node_circular*)*n);
-	int size=-1;
-	int msg_changed=0;*/
+ 
+    //memory locations for all processes
+	MemoryNode** memory_location = (MemoryNode**)malloc(n*sizeof(MemoryNode*));
+	
 	int slot=0;
 	P_msgbuff newProcess;
 	newProcess.id=0;
@@ -730,14 +730,11 @@ void RR(int t_slot)
 		//priority[index_p]= newProcess.priority;
 		arrival[index_p]= newProcess.arrival;
 		index_p++;
+		
 		//enqueue
 		printf("before enqueue\n");
-		//enqueue_circular(newProcess.id, readyf, readyr, newProcess.run);
 		enqueue_circular(q, newProcess.id, newProcess.run,newProcess.memsize);  
 		
-	//if(msg_changed==1)
-	//{	
-		//add to data structure
 		
 		while(newProcess.id!=-1 || !isempty_circular(q))
 		{
@@ -754,7 +751,7 @@ void RR(int t_slot)
 		   msg_changed=1;
 		}
         
-       
+       //add to ready queue
         if(msg_changed==1 && newProcess.id!=-1)
 	{	
 		//add to data structure
@@ -763,19 +760,30 @@ void RR(int t_slot)
 		//priority[index_p]= newProcess.priority;
 		arrival[index_p]= newProcess.arrival;
 		index_p++;
+		
 		//enqueue
 		enqueue_circular(q, newProcess.id,newProcess.run,newProcess.memsize);
 	}
 	Pindex=binarySearch(id,0,index_p-1,q->front->id);
+	
+	//no process is working & ready queue is not empty yet
 	if((*busyaddr)==0 && !isempty_circular(q))
 	{
 	
-	//Pindex=binarySearch(id,0,index_p-1,q->front->id);
-	(*busyaddr)=1;
-	//printf("status of id %d is %c\n",id[Pindex],*(stataddr[Pindex]));
 	
-	if (*(stataddr[Pindex])!='P')
+	//(*busyaddr)=1;
+	
+	if (*(stataddr[Pindex])!='P') //new process
 	{
+		//try to allocate memory
+		memory_location[Pindex]= allocate(Mem_Map,q->front->memory_size);
+		
+		if(memory_location[Pindex]!=NULL) //successful memory allocation
+		{
+		      printf("\nallocated %d\n",Pindex);
+		      PrintMemory(Mem_Map);
+		      
+			(*busyaddr)=1;
 	        int pid=fork();
 	        start_time_RR[Pindex]=getClk();
 	        fprintf(pFile, "At time %d process %d started arr %d total %d remain %d wait %d\n",getClk(),id[Pindex],arrival[Pindex],run[Pindex],run[Pindex],*(waitaddr[Pindex]));
@@ -787,8 +795,8 @@ void RR(int t_slot)
 	         {
       		  perror("couldn't fork process of id \n");
       		  exit(-1);
-		 }
-		else if (pid==0) //child process 
+			 }
+			else if (pid==0) //child process 
      	        {
      	          //printf("started process of id %d runing \n",(*readyf)->id);
       		  printf("size of id array in schedular=%d\n",index_p);
@@ -834,14 +842,17 @@ void RR(int t_slot)
 		
 		printf("clock in schedular=%d\n",getClk());
 		//kill(pid,SIGUSR1);
-	
+	}
+	else //memory not found--> add to waiting list
+	{
+		/////////////////////////waiting list
+	}
 		}
 		
 	       
 	       else //resume -> status==P
-	       {
-	   //    han get el id elly han-continue beeh   
-	       //(*busyaddr)=1;
+	       {  
+	       (*busyaddr)=1;
 	       *(waitaddr[Pindex])=*(waitaddr[Pindex])+(getClk()-start_wait[Pindex]);
 	       printf("process of id= %d is resumed at clock= %d with waiting time  	=%d and start wait time=%d\n",id[Pindex],getClk(),*(waitaddr[Pindex]),start_wait[Pindex]);
               *(stataddr[Pindex])='R';
@@ -912,6 +923,12 @@ void RR(int t_slot)
 		{
 		      (*busyaddr)=0;
 		      *(stataddr[Pindex])='T';
+		      
+		      //deallocate from memory
+		      deallocate(memory_location[Pindex]);
+		      printf("\ndeallocated\n");
+		      PrintMemory(Mem_Map);
+		      
 		      dequeue_circular(q);
 		      printf("Process of id=%d is dequeued\n",id[Pindex]);
 		      WTA[Pindex]= (double)(getClk()-arrival[Pindex])/(double)run[Pindex];
@@ -942,6 +959,12 @@ void RR(int t_slot)
 		      { 
 		        (*busyaddr)=0;
 		        *(stataddr[Pindex])='T';
+		        
+		        //deallocate from memory
+				deallocate(memory_location[Pindex]);
+				printf("\ndeallocated\n");
+				PrintMemory(Mem_Map);
+		      
 		        dequeue_circular(q);
 		        printf("Process of id=%d is dequeued\n",id[Pindex]);
 		        WTA[Pindex]= (double)(getClk()-arrival[Pindex])/(double)run[Pindex];
@@ -974,7 +997,9 @@ double std_wta=0;
   std_wta=sqrt(std_wta);
   double CPU_Util =(((double)use_time)/((double)end_CPU-(double)start_CPU))*100;
    fprintf(pFile2,"CPU Utilization = %.2f%%\nAvg WTA = %.2f\nAvg Waiting = %.2f\nStd WTA = %.2f",CPU_Util,wta_avg,avg_wait,std_wta);	        
-fclose(pFile2);	 
+fclose(pFile2);
+
+free(memory_location);	 
 }
 
 
