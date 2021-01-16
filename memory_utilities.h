@@ -143,7 +143,7 @@ void PrintMemory(MemoryMap* M)
 		i++;
 	}
 }
-/* ////for testing////
+
 int main()
 {
 	MemoryMap* Mem_Map= createMap();
@@ -197,4 +197,4 @@ int main()
 	printf("\nsuccess\n");
 	PrintMemory(Mem_Map);
 	return 0;
-}*/
+}

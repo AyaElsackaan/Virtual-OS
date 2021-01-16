@@ -115,7 +115,7 @@ typedef struct Pmsgbuff
     int arrival;
     int run;
     int priority;
-    //int memory;
+    int memsize;
 }P_msgbuff;
 
 /////////////////////////////////////////search index of id in array////////////////////////////////

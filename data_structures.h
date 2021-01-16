@@ -9,6 +9,7 @@ typedef struct node_p {
     int id; 
     int priority; // Lower values -> higher priority 
     int runningTime;
+    int memory_size;
   
 } Node_priority; 
   
@@ -16,6 +17,7 @@ typedef struct node_c {
 	int id;
 	struct node_c* next;
 	int runningTime;
+	int memory_size;
 }Node_circular;
 
 struct Queue_c
@@ -87,12 +89,13 @@ void reheapDown(int i, Node_priority **H,int * size)
 } 
 
 //add a node to the heap
-void enqueue_priority(int p, int ID, Node_priority **H, int * size, int rTime) 
+void enqueue_priority(int p, int ID, Node_priority **H, int * size, int rTime, int mem) 
 { 
 	Node_priority* temp = (Node_priority*)malloc(sizeof(Node_priority)); 
     temp->id = ID; 
     temp->priority = p; 
     temp->runningTime = rTime;
+    temp->memory_size=mem;
     
 	*size = *size + 1; 
 	H[*size] = temp; 
@@ -144,11 +147,12 @@ struct Queue_c* create_Queue_c()
   return q;
 } 
 
-void enqueue_circular(struct Queue_c* q, int d, int rTime)
+void enqueue_circular(struct Queue_c* q, int d, int rTime, int mem)
 {
   Node_circular* n = (Node_circular*)malloc(sizeof(Node_circular));
   n->id = d;
   n->runningTime = rTime;
+  n->memory_size=mem;
   n->next = NULL;
   if (q->rear ==NULL)  //queue is empty
   {

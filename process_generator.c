@@ -21,6 +21,7 @@ int main(int argc, char * argv[])
     int arrival[n];
     int run[n];
     int priority[n];
+    int memsize[n];
 
     int key_id_s1 = ftok("keyfile", 'X');
     sem1 = semget(key_id_s1, 1, 0666 | IPC_CREAT);
@@ -113,6 +114,8 @@ int main(int argc, char * argv[])
     	processes[i].arrival=arrival[i];
     	processes[i].run=run[i];
     	processes[i].priority=priority[i];
+    	processes[i].memsize=memsize[i];
+    	
     	//Processes[i].memory=memory[i];
     }
         //create a message queue for scheduler
@@ -242,7 +245,7 @@ int getlines()
    return lines;
 }
 
-void readfile(int *id,int *arrival,int *run, int *priority, int lines)
+void readfile(int *id,int *arrival,int *run, int *priority, int*memsize, int lines)
 {
   FILE *fp;
  //getting data  
@@ -255,10 +258,11 @@ void readfile(int *id,int *arrival,int *run, int *priority, int lines)
     fscanf(fp,"%d", &arrival[i]);
     fscanf(fp,"%d", &run[i]);
     fscanf(fp,"%d", &priority[i]);
+    fscanf(fp,"%d", &memsize[i]);
   } 
   for (int i=0; i<lines; i++)
   {
-    printf("%d\t%d\t%d\t%d\n", id[i], arrival[i], run[i], priority[i]);  
+    printf("%d\t%d\t%d\t%d\t%d\n", id[i], arrival[i], run[i], priority[i], memsize[i]);  
   }
   fclose(fp); //close file 
 }
