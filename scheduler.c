@@ -828,14 +828,16 @@ void RR(int t_slot)
 	       {
 	   //    han get el id elly han-continue beeh   
 	       //(*busyaddr)=1;
+	       *(waitaddr[Pindex])=*(waitaddr[Pindex])+(getClk()-start_wait[Pindex]);
+	       printf("process of id= %d is resumed at clock= %d with waiting time  	=%d and start wait time=%d\n",id[Pindex],getClk(),*(waitaddr[Pindex]),start_wait[Pindex]);
               *(stataddr[Pindex])='R';
               fprintf(pFile, "At time %d process %d resumed arr %d total %d remain %d wait %d\n",getClk(),id[Pindex],arrival[Pindex],run[Pindex],*(remaddr[Pindex]),*(waitaddr[Pindex]));
 	      kill(pidarr[Pindex],SIGCONT);
 	       cont_time=getClk();
 	       
 	       printf("remaining time of process with id=%d is %d\n",id[Pindex],*(remaddr[Pindex]));
-	      *(waitaddr[Pindex])=*(waitaddr[Pindex])+(getClk()-start_wait[Pindex]);
-	       printf("process of id= %d is resumed at clock= %d with waiting time  	=%d and start wait time=%d\n",id[Pindex],getClk(),*(waitaddr[Pindex]),start_wait[Pindex]);
+	      /**(waitaddr[Pindex])=*(waitaddr[Pindex])+(getClk()-start_wait[Pindex]);
+	       printf("process of id= %d is resumed at clock= %d with waiting time  	=%d and start wait time=%d\n",id[Pindex],getClk(),*(waitaddr[Pindex]),start_wait[Pindex]);*/
 	       
 	      // sleep(10);
 	       }
