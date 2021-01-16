@@ -66,11 +66,12 @@ void removeNodeAfter(MemoryNode* node_before_me)
 {
 	MemoryNode* temp= node_before_me->next;
 	node_before_me->next=temp->next;
-	temp->next->prev=node_before_me;
+	if(temp->next!=NULL) //node before me is the last node
+		temp->next->prev=node_before_me;
 	free(temp);
 }
 
-void getNeededSize(MemoryNode*block,int proc_size)
+MemoryNode* getNeededSize(MemoryNode*block,int proc_size)
 {
 	if(block->size < proc_size)
 	{
@@ -78,37 +79,34 @@ void getNeededSize(MemoryNode*block,int proc_size)
 		block->size=(block->size)*2;
 		removeNodeAfter(block);
 		block->type='P';
-		return ;
+		return block;
 		
 	}
 	
 	//divide
 	block->size=block->size/2;
 	addNodeAfter (block, 'H', block->starts_at+(block->size), block->size);	
-	getNeededSize(block, proc_size);
+	return getNeededSize(block, proc_size);
 }
 
-bool allocate(MemoryMap * memmap,int proc_size)
+MemoryNode* allocate(MemoryMap * memmap,int proc_size)
 {
 	MemoryNode* block= getBlock(memmap, proc_size);
 	if (block==NULL) 
-	{
-		printf("false\n");
-		return false; //can't allocate
-	}	
-	printf("true\n");
-	 getNeededSize(block,proc_size);
-	return true;
+		return NULL; //can't allocate
+			
+	return getNeededSize(block,proc_size);
 }
-/*
+
 void Merge(MemoryNode* block)
 {
 	if(block->size==MAX_MEMORY)
-		return;
-		
-	if(block->starts_at % (2*block->size)) //merge with next
 	{
-		if(block->next->type=='H')
+		return;
+	}	
+	if(block->starts_at % (2*block->size)==0) //merge with next
+	{
+		if(block->next->type=='H'&&block->next->size==block->size)
 		{
 			block->size=2*block->size;
 			removeNodeAfter(block);
@@ -117,7 +115,7 @@ void Merge(MemoryNode* block)
 	}
 	else //merge with prev
 	{
-		if(block->prev->type=='H')
+		if(block->prev->type=='H'&&block->prev->size==block->size)
 		{
 			block->prev->size=2*block->prev->size;
 			removeNodeAfter(block->prev);
@@ -132,7 +130,7 @@ void deallocate(MemoryNode* block)
 	block->type='H';
 	Merge(block);
 }
-*/
+
 
 void PrintMemory(MemoryMap* M)
 {
@@ -152,18 +150,51 @@ int main()
 	printf("created\n");
 	//addNodeAfter (Mem_Map->map_head, 'P', 1, 10);
 	PrintMemory(Mem_Map);
-	if(allocate(Mem_Map,70))
+	
+	MemoryNode* A= allocate(Mem_Map,70);
+	if(A!=NULL)
 	{	printf("\nsuccess1\n");
 		PrintMemory(Mem_Map);
-	}	
-	if(allocate(Mem_Map,35))
+	}
+	
+	MemoryNode* B=allocate(Mem_Map,35);	
+	if(B!=NULL)
 	{	printf("\nsuccess2\n");
 		PrintMemory(Mem_Map);
-	}	
-	if(allocate(Mem_Map,80))
+	}
+	
+	MemoryNode* C=allocate(Mem_Map,80);	
+	if(C!=NULL)
 	{	printf("\nsuccess3\n");
 		PrintMemory(Mem_Map);
+	}
+	
+	MemoryNode* D=allocate(Mem_Map,1024);  //no enough space
+	if(D==NULL)
+	{	printf("\nfailed\n");
+		PrintMemory(Mem_Map);
 	}	
-
+	
+	deallocate(A);
+	printf("\nsuccess\n");
+	PrintMemory(Mem_Map);
+	
+	D=allocate(Mem_Map,60);
+	if(D!=NULL)
+	{	printf("\nsuccess\n");
+		PrintMemory(Mem_Map);
+	}
+		
+	deallocate(B);
+	printf("\nsuccess\n");
+	PrintMemory(Mem_Map);
+	
+	deallocate(D);
+	printf("\nsuccess\n");
+	PrintMemory(Mem_Map);
+	
+	deallocate(C);
+	printf("\nsuccess\n");
+	PrintMemory(Mem_Map);
 	return 0;
 }
