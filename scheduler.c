@@ -771,7 +771,7 @@ void RR(int t_slot)
 	{
 	
 	
-	//(*busyaddr)=1;
+	(*busyaddr)=1;
 	
 	if (*(stataddr[Pindex])!='P') //new process
 	{
@@ -783,7 +783,6 @@ void RR(int t_slot)
 		      printf("\nallocated %d\n",Pindex);
 		      PrintMemory(Mem_Map);
 		      
-			(*busyaddr)=1;
 	        int pid=fork();
 	        start_time_RR[Pindex]=getClk();
 	        fprintf(pFile, "At time %d process %d started arr %d total %d remain %d wait %d\n",getClk(),id[Pindex],arrival[Pindex],run[Pindex],run[Pindex],*(waitaddr[Pindex]));
@@ -852,7 +851,6 @@ void RR(int t_slot)
 	       
 	       else //resume -> status==P
 	       {  
-	       (*busyaddr)=1;
 	       *(waitaddr[Pindex])=*(waitaddr[Pindex])+(getClk()-start_wait[Pindex]);
 	       printf("process of id= %d is resumed at clock= %d with waiting time  	=%d and start wait time=%d\n",id[Pindex],getClk(),*(waitaddr[Pindex]),start_wait[Pindex]);
               *(stataddr[Pindex])='R';

@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <stdio.h>
-
+//////////////////////////Priority queue//////////////////
 
 typedef struct node_p { 
     int id; 
@@ -13,18 +13,6 @@ typedef struct node_p {
   
 } Node_priority; 
   
-typedef struct node_c {
-	int id;
-	struct node_c* next;
-	int runningTime;
-	int memory_size;
-}Node_circular;
-
-struct Queue_c
-{
-  Node_circular *front;
-  Node_circular *rear;
-};
 
 //get parent
 int parent(int i) 
@@ -137,6 +125,18 @@ void updatePriority(int i, int p, Node_priority **H, int * size)
 //} 
 
 /////////////////////////////////////Circular Queue for round robin////////////////////////////////////////
+typedef struct node_c {
+	int id;
+	struct node_c* next;
+	int runningTime;
+	int memory_size;
+}Node_circular;
+
+struct Queue_c
+{
+  Node_circular *front;
+  Node_circular *rear;
+};
 
 struct Queue_c* create_Queue_c()
 {
@@ -168,25 +168,7 @@ void enqueue_circular(struct Queue_c* q, int d, int rTime, int mem)
   }
 }
 
-/*void enqueue_circular(int d, Node_circular **f, Node_circular **r,int rTime) //Insert elements in Queue
-{
-	Node_circular* n = (Node_circular*)malloc(sizeof(Node_circular));
-	n->id = d;
-	n->runningTime = rTime;
-	n->next = NULL;
-	if((*r==NULL)&&(*f==NULL))
-	{
-		*f = n;
-		*r = n;
-		(*r)->next = *f;
-	}
-	else
-	{
-		(*r)->next = n;
-		*r = n;
-		n->next = *f;
-	}
-}*/ 
+
 void dequeue_circular(struct Queue_c* q) // Delete an element from Queue
 {
 	Node_circular* t;
@@ -240,4 +222,66 @@ int isempty_circular(struct Queue_c* q)
 { 
  return ((q->front==NULL)&&(q->rear==NULL));
 }
+
+////////////////////////////Waiting List for memory (linked list)/////////
+typedef struct queue_ll
+{
+  Node_circular *front;
+  Node_circular *rear;
+
+}WaitingList;
+
+
+WaitingList* create_Waiting_List()
+{
+  WaitingList* q = (WaitingList*)malloc(sizeof(WaitingList));
+  q->front = NULL; 
+  q->rear=NULL; 
+  return q;
+} 
+
+void enqueue_waitingist(WaitingList* q, int d, int rTime, int mem)
+{
+  Node_circular* n = (Node_circular*)malloc(sizeof(Node_circular));
+  n->id = d;
+  n->runningTime = rTime;
+  n->memory_size=mem;
+  n->next = NULL;
+  if (q->front ==NULL)  //queue is empty
+  {
+    q->front = n;
+    q->rear=n;
+  }
+  else
+  {
+    q->rear->next = n;
+    q->rear = n;
+  }
+}
+
+void RemoveFromList(WaitingList* f, Node_circular* node_before_me)
+{
+	if(node_before_me==NULL)  //remove first node
+	{
+		Node_circular* temp=f->front;
+		f->front=temp->next;
+		free(temp);
+	}
+	else 
+	{
+		Node_circular* temp= node_before_me->next;
+		if(temp->next==NULL) //the last node
+		{
+			f->rear=node_before_me;
+			node_before_me->next=NULL;
+			free(temp);
+		}
+		else
+		{
+			node_before_me->next=temp->next;
+			free(temp);
+		}
+	}
+}
+
 
