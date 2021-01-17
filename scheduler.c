@@ -1111,9 +1111,10 @@ readySRTN = (Node_running**)malloc(sizeof(Node_running*)*n);
 	newProcess.id=0;
 	
 	down(sem1);
+	int rec_val;
 	while(rec_val!=-1)
 	{
-		int rec_val = msgrcv(msgq_ready, &newProcess, sizeof(newProcess),0, !IPC_NOWAIT);
+		rec_val = msgrcv(msgq_ready, &newProcess, sizeof(newProcess),0, IPC_NOWAIT);
 		if (rec_val == -1)
 		{
 		     perror("Error in receive");
@@ -1141,9 +1142,9 @@ readySRTN = (Node_running**)malloc(sizeof(Node_running*)*n);
 	}
 	while(newProcess.id!=-1 || !isempty_priority(size))
 	{
-	int rec_val_1 = msgrcv(msgq_ready, &newProcess, sizeof(newProcess),0, IPC_NOWAIT);
+	rec_val = msgrcv(msgq_ready, &newProcess, sizeof(newProcess),0, IPC_NOWAIT);
 
-		if (rec_val_1 == -1 && errno==ENOMSG)
+		if (rec_val == -1 && errno==ENOMSG)
 		{
 		    //printf("queue is not empty\n");
 		    msg_changed=0;
@@ -1152,7 +1153,7 @@ readySRTN = (Node_running**)malloc(sizeof(Node_running*)*n);
 		{
 		   printf("\nMessage received from server: %d\n", newProcess.id);
 		   msg_changed=1;
-		   //down(sem1);
+		   
 		}
 		if(msg_changed==1 && newProcess.id!=-1)
 	{	
@@ -1163,6 +1164,36 @@ readySRTN = (Node_running**)malloc(sizeof(Node_running*)*n);
 		arrival[index_p]= newProcess.arrival;
 		enqueue_running(newProcess.priority, newProcess.id, readySRTN, &size, newProcess.run);
 		index_p++;
+		
+		down(sem1);
+		while(rec_val!=-1)
+	{
+		rec_val = msgrcv(msgq_ready, &newProcess, sizeof(newProcess),0, IPC_NOWAIT);
+		if (rec_val == -1)
+		{
+		     perror("Error in receive");
+		     msg_changed=0;
+		    }
+		else
+		{
+		printf("\nMessage received from server: %d\n", newProcess.id);
+		msg_changed=1;
+		}
+		
+		if(msg_changed==1 && newProcess.id!=-1)
+		{	
+			//add to data structure
+			id[index_p]= newProcess.id;
+			run[index_p]= newProcess.run;
+			priority[index_p]= newProcess.priority;
+			arrival[index_p]= newProcess.arrival;
+			index_p++;
+			//enqueue
+			enqueue_running(newProcess.priority, newProcess.id, readySRTN, &size, newProcess.run);
+
+
+		}	
+	}
 		
                if(*busyaddr==1 && !isempty_priority(size))
                {
