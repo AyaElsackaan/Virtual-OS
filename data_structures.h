@@ -273,13 +273,9 @@ void RemoveFromList(WaitingList* f, Node_circular* node_before_me)
 		Node_circular* temp= node_before_me->next;
 		if(temp->next==NULL) //the last node
 		{
-		printf("4\n");
-			f->rear=node_before_me;
-			printf("4\n");
-			f->rear->next=NULL;
-			printf("4\n");
 			free(temp);
-			printf("4\n");
+			node_before_me->next=NULL;
+			f->rear=node_before_me;
 		}
 		else
 		{

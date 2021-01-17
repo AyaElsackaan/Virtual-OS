@@ -14,12 +14,16 @@ int main()
 	else{
 		//temp=temp->next;
 		while(temp->next!=NULL)
-		{//printf("4\n");
+		{
 			if(temp->next->id==2)
-			{//printf("4\n");
+			{
 				RemoveFromList(w, temp);
+				printf("removed\n");
 			}
-			temp=temp->next;
+			if(temp->next!=NULL)
+				temp=temp->next;
+			else
+				break;
 		}
 	}
 	
