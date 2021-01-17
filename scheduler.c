@@ -739,6 +739,7 @@ void RR(int t_slot)
 		
 		while(newProcess.id!=-1 || !isempty_circular(q))
 		{
+		printf("front of queue is id %d\n",q->front->id);
 		 int rec_val_2 = msgrcv(msgq_ready, &newProcess, sizeof(newProcess),0, IPC_NOWAIT);
 
 		if (rec_val_2 == -1 && errno==ENOMSG)
@@ -778,6 +779,7 @@ void RR(int t_slot)
 	
 	if (*(stataddr[Pindex])!='P') //not paused--> a new process
 	{
+	if(memory_location[Pindex]==NULL) 
 		//try to allocate memory
 		memory_location[Pindex]= allocate(Mem_Map,q->front->memory_size);
 		
@@ -847,12 +849,18 @@ void RR(int t_slot)
 	}
 	else //memory not found--> add to waiting list
 	{
-		//remove from circular queue
-		dequeue_circular(q);
-		printf("Process of id=%d is dequeued\n",id[Pindex]);
+		printf("Process of id=%d has no memory\n",id[Pindex]);
 		
 		//add to waitinglist
 		enqueue_waitingist(w_list, q->front->id, q->front->runningTime, q->front->memory_size);
+		printf("Process of id=%d is added to waiting list\n",id[Pindex]);
+		
+		//remove from circular queue
+		dequeue_circular(q);
+		printf("Process of id=%d is dequeued for memory\n",id[Pindex]);
+		
+		*(busyaddr)=0;
+		
 	}
 		}
 		
@@ -872,7 +880,8 @@ void RR(int t_slot)
 	       
 	      // sleep(10);
 	       }
-	       
+	    if(memory_location[Pindex]!=NULL) //successful memory allocation
+		{   
 	       if (*(stataddr[Pindex])=='S' || *(stataddr[Pindex])=='W')
 	       {
 	          start_slot_time = start_time_RR[Pindex];
@@ -942,8 +951,47 @@ void RR(int t_slot)
 		      WTA[Pindex]= (double)(getClk()-arrival[Pindex])/(double)run[Pindex];
    		      //waiting_time[Pindex]=start_time-arrival[Pindex];
 		      fprintf(pFile, "At time %d process %d finished arr %d total %d remain %d wait %d TA %d WTA %.2f\n",getClk(),id[Pindex],arrival[Pindex],run[Pindex],*(remaddr[Pindex]),*(waitaddr[Pindex]),(getClk()-arrival[Pindex]),WTA[Pindex]);
+		      
+		        //check waiting list
+		      Node_circular* temp=w_list->front; //iterator
+		      if(temp!=NULL)
+		      {
+		      //for first element 
+		      printf("w.l not empty\n");
+		      int wl_index=binarySearch(id,0,index_p-1,temp->id);
+			  memory_location[wl_index]=allocate(Mem_Map,temp->memory_size);	
+				if(memory_location[wl_index]!=NULL)
+				{
+				printf("w.l first was allocated id %d\n",temp->id);
+				PrintMemory(Mem_Map);
+					enqueue_at_front(q,temp->id,temp->runningTime, temp->memory_size); //add to front of ready queue
+					printf("enqueued at front\n");
+					RemoveFromList(w_list, NULL); //remove first element
+					printf("removed from w.l\n");
+				}
+				else //check rest of waiting list
+				{
+					while(temp->next!=NULL)
+					{
+						wl_index=binarySearch(id,0,index_p-1,temp->next->id);
+						memory_location[wl_index]= allocate(Mem_Map,temp->next->memory_size);	
+						if(memory_location[wl_index]!=NULL)
+						{
+							enqueue_at_front(q,temp->next->id,temp->next->runningTime, temp->next->memory_size); //add to front of ready queue							
+							RemoveFromList(w_list, temp);//remove first element
+							break;
+							
+						}
+						
+						temp=temp->next;
+					}
+				}
+	
+		      }///end of waiting list check
+	
+
 		}
-		else
+		else //time slot ended 
 		{
 		     (*busyaddr)=0;
 		     //printf("process id=%d before being stopped,status=%c and remaining time =%d\n",id[Pindex],*(stataddr[Pindex]),*(remaddr[Pindex]));
@@ -977,11 +1025,45 @@ void RR(int t_slot)
 		        printf("Process of id=%d is dequeued\n",id[Pindex]);
 		        WTA[Pindex]= (double)(getClk()-arrival[Pindex])/(double)run[Pindex];
 		        fprintf(pFile, "At time %d process %d finished arr %d total %d remain %d wait %d TA %d WTA %.2f\n",getClk(),id[Pindex],arrival[Pindex],run[Pindex],*(remaddr[Pindex]),*(waitaddr[Pindex]),(getClk()-arrival[Pindex]),WTA[Pindex]);
+		        
+		        //check waiting list
+		      Node_circular* temp=w_list->front; //iterator
+		      if(temp!=NULL)
+		      {
+		      //for first element 
+		      int wl_index=binarySearch(id,0,index_p-1,temp->id);
+			  memory_location[wl_index]=allocate(Mem_Map,temp->memory_size);	
+				if(memory_location[wl_index]!=NULL)
+				{
+					enqueue_at_front(q,temp->id, temp->runningTime,temp->memory_size); //add to front of ready queue
+					RemoveFromList(w_list, NULL); //remove first element
+				}
+				else //check rest of waiting list
+				{
+					while(temp->next!=NULL)
+					{
+						wl_index=binarySearch(id,0,index_p-1,temp->next->id);
+						memory_location[wl_index]= allocate(Mem_Map,temp->next->memory_size);	
+						if(memory_location[wl_index]!=NULL)
+						{
+							enqueue_at_front(q,temp->next->id, temp->next->runningTime,temp->next->memory_size); //add to front of ready queue							
+							RemoveFromList(w_list, temp);//remove first element
+							break;
+							
+						}
+						
+						temp=temp->next;
+					}
+				}
+	
+		      }///end of waiting list check
+		      
+
 		      }
 		}
-		
+		}
 	        }
-	        printf("remaining time of process 1 in loop=%d\n",*(remaddr[0]));
+	       // printf("remaining time of process 1 in loop=%d\n",*(remaddr[0]));
 	        }
 fclose(pFile);	        
 int end_CPU=getClk();	        

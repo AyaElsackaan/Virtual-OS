@@ -168,6 +168,26 @@ void enqueue_circular(struct Queue_c* q, int d, int rTime, int mem)
   }
 }
 
+void enqueue_at_front(struct Queue_c* q, int d, int rTime, int mem)
+{
+  Node_circular* n = (Node_circular*)malloc(sizeof(Node_circular));
+  n->id = d;
+  n->runningTime = rTime;
+  n->memory_size=mem;
+  
+  if (q->rear ==NULL)  //queue is empty
+  {
+    q->front = n;
+    q->rear = n;
+    q->rear->next = q->front;
+  }
+  else
+  {
+    n->next = q->front;
+    q->front=n;
+    q->rear->next=n;
+  }
+}
 
 void dequeue_circular(struct Queue_c* q) // Delete an element from Queue
 {
