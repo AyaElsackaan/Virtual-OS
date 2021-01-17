@@ -266,22 +266,36 @@ void RemoveFromList(WaitingList* f, Node_circular* node_before_me)
 		Node_circular* temp=f->front;
 		f->front=temp->next;
 		free(temp);
+		return;
 	}
 	else 
 	{
 		Node_circular* temp= node_before_me->next;
 		if(temp->next==NULL) //the last node
 		{
+		printf("4\n");
 			f->rear=node_before_me;
-			node_before_me->next=NULL;
+			printf("4\n");
+			f->rear->next=NULL;
+			printf("4\n");
 			free(temp);
+			printf("4\n");
 		}
 		else
 		{
 			node_before_me->next=temp->next;
 			free(temp);
+			return;
 		}
 	}
 }
 
-
+void PrintWaitingList(WaitingList* w)
+{
+	Node_circular* temp=w->front;
+	while(temp!=NULL)
+	{
+		printf("%d\n",temp->id);
+		temp=temp->next;
+	}
+}
