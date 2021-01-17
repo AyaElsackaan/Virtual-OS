@@ -202,7 +202,7 @@ printf("\n started\n\n");printf("\n arguments=%d \n\n",argc);
 	    perror("Error in attach in server");
 	    exit(-1);
 	}
-	
+	*(waitaddr[i])=0;
      }	
     //----------------------------------------------------------------// 
     //semaphores//
@@ -689,8 +689,6 @@ void HPF()
 }
 
 
-//Node_circular **readyf=NULL;
-//Node_circular **readyr=NULL;
 
 void RR(int t_slot)
 {
@@ -707,6 +705,9 @@ void RR(int t_slot)
   int start_slot_time;
   int start_time_s;
   struct Queue_c* q = create_Queue_c();
+ 
+ //waiting list for processes that couldn't be allocated in memory 
+ WaitingList* w_list= create_Waiting_List();
  
     //memory locations for all processes
 	MemoryNode** memory_location = (MemoryNode**)malloc(n*sizeof(MemoryNode*));
@@ -764,6 +765,8 @@ void RR(int t_slot)
 		//enqueue
 		enqueue_circular(q, newProcess.id,newProcess.run,newProcess.memsize);
 	}
+	
+	//get index of next process in ready queue
 	Pindex=binarySearch(id,0,index_p-1,q->front->id);
 	
 	//no process is working & ready queue is not empty yet
@@ -773,7 +776,7 @@ void RR(int t_slot)
 	
 	(*busyaddr)=1;
 	
-	if (*(stataddr[Pindex])!='P') //new process
+	if (*(stataddr[Pindex])!='P') //not paused--> a new process
 	{
 		//try to allocate memory
 		memory_location[Pindex]= allocate(Mem_Map,q->front->memory_size);
@@ -844,7 +847,12 @@ void RR(int t_slot)
 	}
 	else //memory not found--> add to waiting list
 	{
-		/////////////////////////waiting list
+		//remove from circular queue
+		dequeue_circular(q);
+		printf("Process of id=%d is dequeued\n",id[Pindex]);
+		
+		//add to waitinglist
+		enqueue_waitingist(w_list, q->front->id, q->front->runningTime, q->front->memory_size);
 	}
 		}
 		
@@ -927,8 +935,10 @@ void RR(int t_slot)
 		      printf("\ndeallocated\n");
 		      PrintMemory(Mem_Map);
 		      
+		      //remove from circular queue
 		      dequeue_circular(q);
 		      printf("Process of id=%d is dequeued\n",id[Pindex]);
+		      
 		      WTA[Pindex]= (double)(getClk()-arrival[Pindex])/(double)run[Pindex];
    		      //waiting_time[Pindex]=start_time-arrival[Pindex];
 		      fprintf(pFile, "At time %d process %d finished arr %d total %d remain %d wait %d TA %d WTA %.2f\n",getClk(),id[Pindex],arrival[Pindex],run[Pindex],*(remaddr[Pindex]),*(waitaddr[Pindex]),(getClk()-arrival[Pindex]),WTA[Pindex]);
