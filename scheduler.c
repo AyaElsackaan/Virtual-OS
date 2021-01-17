@@ -8,6 +8,8 @@ extern int errno ;
 //void processTerm(int);
 void HPF();
 void RR(int t_slot);
+void SRTN();
+
 int msgq_ready,timeslot,n;
 int msg_changed;
 int start_time;
@@ -43,7 +45,8 @@ char*str,*str2,*str3,*str4,*str5;
 double* WTA;
 int* start_time_RR;
 int sem1; 
-
+Node_running* dequeuedS;
+Node_running **readySRTN;
 MemoryMap* Mem_Map; //keeps track of free & allocated memory blocks
 /*arguments:
  * 	1:algo 
@@ -231,7 +234,10 @@ printf("\n started\n\n");printf("\n arguments=%d \n\n",argc);
    {
       RR(timeslot);
    }
-	
+	else if (algo==2)
+    {
+        SRTN();
+    }
 	
 	
    
@@ -257,6 +263,8 @@ printf("\n started\n\n");printf("\n arguments=%d \n\n",argc);
     	free(start_time_RR);
     	free(WTA);
     	free(ready);
+    	free(readySRTN);
+    	
     	shmdt(busyaddr);
     	
     	
@@ -1092,4 +1100,163 @@ fclose(pFile2);
 free(memory_location);	 
 }
 
+void SRTN()
+{
+(*busyaddr)=0;
 
+readySRTN = (Node_running**)malloc(sizeof(Node_running*)*n);
+	int size=-1;
+	msg_changed=0;
+	P_msgbuff newProcess;
+	newProcess.id=0;
+	
+	down(sem1);
+	while(rec_val!=-1)
+	{
+		int rec_val = msgrcv(msgq_ready, &newProcess, sizeof(newProcess),0, !IPC_NOWAIT);
+		if (rec_val == -1)
+		{
+		     perror("Error in receive");
+		     msg_changed=0;
+		    }
+		else
+		{
+		printf("\nMessage received from server: %d\n", newProcess.id);
+		msg_changed=1;
+		}
+		
+		if(msg_changed==1)
+		{	
+			//add to data structure
+			id[index_p]= newProcess.id;
+			run[index_p]= newProcess.run;
+			priority[index_p]= newProcess.priority;
+			arrival[index_p]= newProcess.arrival;
+			index_p++;
+			//enqueue
+			enqueue_running(newProcess.priority, newProcess.id, readySRTN, &size, newProcess.run);
+
+
+		}	
+	}
+	while(newProcess.id!=-1 || !isempty_priority(size))
+	{
+	int rec_val_1 = msgrcv(msgq_ready, &newProcess, sizeof(newProcess),0, IPC_NOWAIT);
+
+		if (rec_val_1 == -1 && errno==ENOMSG)
+		{
+		    //printf("queue is not empty\n");
+		    msg_changed=0;
+		 }
+		else
+		{
+		   printf("\nMessage received from server: %d\n", newProcess.id);
+		   msg_changed=1;
+		   //down(sem1);
+		}
+		if(msg_changed==1 && newProcess.id!=-1)
+	{	
+		//add to data structure
+		id[index_p]= newProcess.id;
+		run[index_p]= newProcess.run;
+		priority[index_p]= newProcess.priority;
+		arrival[index_p]= newProcess.arrival;
+		enqueue_running(newProcess.priority, newProcess.id, readySRTN, &size, newProcess.run);
+		index_p++;
+		
+               if(*busyaddr==1 && !isempty_priority(size))
+               {
+                  if (newProcess.run < *(remaddr[Pindex]))
+  		  {
+  		      (*busyaddr)=0;
+  		      *(stataddr[Pindex])='P';
+  		      start_wait[Pindex]=getClk();
+                     kill(pidarr[Pindex],SIGSTOP);    
+     		      enqueue_running(dequeuedS->priority, dequeuedS->id, readySRTN, &size, *(remaddr[Pindex]));
+     		     
+   		 }
+		} 
+
+	}
+		////// 3lshan afdal a-recieve (elly fo2 y3ny)
+		if(*busyaddr==0 && !isempty_priority(size))
+		{
+		//dequeue
+		dequeuedS = dequeue_running(readySRTN, &size);
+		(*busyaddr)=1;
+		printf("process of id %d is dequeued\n",dequeuedS->id); 
+		///fork
+		Pindex=binarySearch(id,0,index_p-1,dequeuedS->id);
+		
+		if (*(stataddr[Pindex])!='P')
+		{
+		int pid=fork();
+		*(stataddr[Pindex])='R';
+		start_time=getClk();
+		printf("process of id %d after forking command with pid= %d\n",dequeuedS->id, pid);
+		 if (pid==-1)
+     	        {
+      		perror("couldn't fork process of id \n");
+      		exit(-1);
+		}
+		else if (pid==0) //child process 
+     	      {
+     	       
+      		printf("started process of id %d runing \n",dequeuedS->id);
+      		printf("size of id array in schedular=%d\n",index_p);
+      		printf("index in schedular=%d\n",Pindex);
+      		
+      		int length = snprintf( NULL, 0, "%d", dequeuedS->runningTime );
+			str = malloc( length + 1 );
+			snprintf( str, length + 1, "%d", dequeuedS->runningTime );
+			
+			length = snprintf( NULL, 0, "%d", dequeuedS->id );
+			str2 = malloc( length + 1 );
+			snprintf( str2, length + 1, "%d", dequeuedS->id );
+			
+			length = snprintf( NULL, 0, "%d", Pindex );
+			str3 = malloc( length + 1 );
+			snprintf( str3, length + 1, "%d", Pindex );
+			
+			length = snprintf( NULL, 0, "%d", n );
+			str4 = malloc( length + 1 );
+			snprintf( str4, length + 1, "%d", n );
+
+      		       length = snprintf( NULL, 0, "%d", start_time );
+			str5 = malloc( length + 1 );
+			snprintf( str5, length + 1, "%d", start_time );
+
+      		execlp("./process.out", "process.out",str,str2,str3,str4,str5, NULL);
+		}
+		else //parent scheduler
+     	     {
+     	        pidarr[Pindex]=pid;
+     		printf("parent: next cycle\n");
+		
+		printf("remaining time of process %d is %d\n",id[Pindex],*(remaddr[Pindex]));	    
+	     }	
+	      
+		}
+		
+		if (*(stataddr[Pindex])=='P')
+		{
+		    *(waitaddr[Pindex])=*(waitaddr[Pindex])+(getClk()-start_wait[Pindex]);
+
+
+		    (*busyaddr)=1;
+		    *(stataddr[Pindex])='R';
+		    kill(pidarr[Pindex],SIGCONT);
+		}
+	}
+
+}
+ printf("last process id=%d, Pindex=%d\n",id[Pindex],Pindex);
+ printf("status of last process=%c\n",*(stataddr[Pindex]));
+ 
+   while (*(stataddr[Pindex])!='T')
+   {
+     printf("last process id=%d, Pindex=%d\n",id[Pindex],Pindex);
+     sleep(1);
+   }          
+
+}

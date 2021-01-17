@@ -107,23 +107,85 @@ Node_priority* dequeue_priority(Node_priority **H, int *size)
 	return result; 
 } 
 
-//change priority of node at i -> for SRTN 
-void updatePriority(int i, int p, Node_priority **H, int * size) 
-{ 
-	int oldp = H[i]->priority; 
-	H[i]->priority = p; 
+/////////////////////////////////////////////SRTN////////////////////////////////////////////////////////////////
+typedef struct node_s { 
+    int id; 
+    int priority; 
+    int runningTime; // Lower values -> higher priority 
+  
+} Node_running;
 
-	if (p < oldp) 
-		reheapUp(i, H); 
-	else 
-		reheapDown(i,H, size); 
+void reheapUpS(int i, Node_running ** H) 
+{ 
+	//compare node to parent
+	while (i > 0 && H[parent(i)]->runningTime > H[i]->runningTime) 
+	{ 
+		// Swap  
+		Node_running* temp=H[parent(i)];
+		H[parent(i)]= H[i];
+		H[i]=temp;
+ 		
+ 		//move up
+		i = parent(i); 
+	} 
 } 
 
-//int peek_shortestTime(Node_priority * f) 
-//{ 
-//    return f->runningTime; 
-//} 
+//move a node down in the heap to keep the representation invariant
+void reheapDownS(int i, Node_running **H,int * size) 
+{ 
+	//get min of node &its 2 children
+	int minIndex = i; 
 
+	int l = leftChild(i); 
+
+	if (l <= *size && H[l]->runningTime < H[minIndex]->runningTime) 
+		minIndex = l; 
+
+	int r = rightChild(i); 
+
+	if (r <= *size && H[r]->runningTime < H[minIndex]->runningTime) 
+		minIndex = r; 
+
+	if (i != minIndex) 
+	{ 
+		//swap
+		Node_running* temp=H[minIndex];
+		H[minIndex]= H[i];
+		H[i]=temp;
+ 
+		reheapDownS(minIndex,H, size); 
+	} 
+} 
+
+//add a node to the heap
+void enqueue_running(int p, int ID, Node_running **H, int * size, int rTime) 
+{ 
+	Node_running* temp = (Node_running*)malloc(sizeof(Node_running)); 
+    temp->id = ID; 
+    temp->priority = p; 
+    temp->runningTime = rTime;
+    
+	*size = *size + 1; 
+	H[*size] = temp; 
+
+	reheapUpS(*size,H); 
+	printf("enqueued :%d\n",ID);
+} 
+
+//remove the min (highest priority)
+Node_running* dequeue_running(Node_running **H, int *size) 
+{ 
+	Node_running* temp=H[0];
+	Node_running* result = H[0]; 
+
+	// Replace the value at the root 
+	// with the last leaf 
+	H[0] = H[*size]; 
+	*size = *size - 1; 
+
+	reheapDownS(0, H, size); 
+	return result; 
+}
 /////////////////////////////////////Circular Queue for round robin////////////////////////////////////////
 typedef struct node_c {
 	int id;
