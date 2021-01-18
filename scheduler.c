@@ -44,6 +44,7 @@ Node_priority **ready;
 char*str,*str2,*str3,*str4,*str5;
 double* WTA;
 int* start_time_RR;
+int* start_time_SRTN;
 int sem1; 
 Node_running* dequeuedS;
 Node_running **readySRTN;
@@ -82,6 +83,7 @@ printf("\n started\n\n");printf("\n arguments=%d \n\n",argc);
     waitaddr=(int**)malloc(n*sizeof(int*));
     start_wait=(int*)malloc(n*sizeof(int));
     start_time_RR=(int*)malloc(n*sizeof(int));
+    start_time_SRTN=(int*)malloc(n*sizeof(int));
     WTA=(double*)malloc(n*sizeof(double));
     printf("%d %d %d\n",algo, timeslot, n);
   
@@ -141,25 +143,7 @@ printf("\n started\n\n");printf("\n arguments=%d \n\n",argc);
 	*(stataddr[i])='W';
      }
 	//(*stataddr)=status;
-   //------------------------------------------------------------//
-   //shared memory remaining time//
-   /*int key_id_rem = ftok("remainingfile", 'M');
-	remid = shmget(key_id_rem, sizeof(int), IPC_CREAT | 0666);
-	if (remid == -1)
-    {
-        perror("Error in create");
-        exit(-1);
-    }
-    else
-        printf("\nShared memory ID remaining= %d\n", remid);
-        
-        remaddr = (int*)shmat(remid, (void *)0, 0); //attach shred memo
-	if ((long)remaddr == -1)
-	{
-	    perror("Error in attach in server");
-	    exit(-1);
-	}*/
-   //------------------------------------------------------------//
+   
    //shared memory remaining time//
     for (int i=0; i<n; i++)
     {
@@ -240,10 +224,10 @@ printf("\n started\n\n");printf("\n arguments=%d \n\n",argc);
     }
 	
 	
-   
+   printf("at end of main before freeing\n");
     //upon termination release the clock resources.
     
-		destroyClk(false);
+		/*destroyClk(false);
 		free(str2);
 	   	free(str);
 	   	free(str3);
@@ -261,22 +245,17 @@ printf("\n started\n\n");printf("\n arguments=%d \n\n",argc);
     	free(start_wait);
     	
     	free(start_time_RR);
+    	free(start_time_SRTN);
     	free(WTA);
-    	free(ready);
-    	free(readySRTN);
+    	//free(ready);
+    	//free(readySRTN);
     	
     	shmdt(busyaddr);
     	
     	
 	//delete shared memory
 	shmctl(busyid, IPC_RMID, 0);
-	
-	//dettach
-	//shmdt(remaddr);
-	
-	//delete shared memory
-	//shmctl(remid, IPC_RMID, 0);
-        
+	  
 	//dettach
 	//delete shared memory
 	for (int i=0; i<n; i++)
@@ -287,7 +266,7 @@ printf("\n started\n\n");printf("\n arguments=%d \n\n",argc);
 		shmctl(rem_id[i], IPC_RMID, 0);
 		shmdt(waitaddr[i]);
 		shmctl(wait_id[i], IPC_RMID, 0);
-    }
+         }
         
         free(remaddr);
     	free(rem_id);
@@ -295,16 +274,10 @@ printf("\n started\n\n");printf("\n arguments=%d \n\n",argc);
     	free(wait_id);
 		free(stataddr);
     	free(stat_id);
-    //kill(getpid(),SIGINT);
-  		free (status);
-    /* P_msgbuff t_end;  //end of processes
-    t_end.id=-2;
-    int send_val = msgsnd(msgq_ready,&t_end,sizeof(t_end), !IPC_NOWAIT); 
-		if (send_val == -1)
-	    	perror("Errror in send");
-		printf("will send %d\n", t_end.id);
-    while(true);*/
     
+  		free (status);*/
+    
+   printf("at end of main after freeing\n"); 
     
 }
 int Pindex=-1;
@@ -318,116 +291,18 @@ void HPF()
     /////shared memory and semaphore sets for CPU_busy
     FILE * pFile2;
     pFile2 = fopen("scheduler.perf", "w");
+    
+    FILE * pFile3;
+    pFile3 = fopen("memory.log", "w");
+    fprintf(pFile3, "#At time x allocated y bytes for process z from i to j\n");
     	
-	/*int key_id_busy = ftok("keyfile", 'B');
-	busyid = shmget(key_id_busy, 256, IPC_CREAT | 0666);
-	if (busyid == -1)
-    {
-        perror("Error in create");
-        exit(-1);
-    }
-    else
-        printf("\nShared memory ID busy= %d\n", busyid);
-        
-        busyaddr = (int*)shmat(busyid, (void *)0, 0); //attach shred memo
-	if ((long)busyaddr == -1)
-	{
-	    perror("Error in attach in server");
-	    exit(-1);
-	}*/
-	(*busyaddr)=0; //CPU is not busy
-        //int Pindex;
-        //int counter=0; //track if all processes are forked
-        //int max;
- 	/*key_t key_busy;
-    
-
-	//create/get message queue
-    key_busy = ftok("keyfile", 'B');  //unique
-    
-    msgq_busy = msgget(key_busy, 0666 | IPC_CREAT); 
-    if (msgq_busy == -1)
-    {
-        perror("Error in creating busy");
-        exit(-1);
-    }
-    printf("Message Queue ID  (busy)= %d\n", msgq_busy);
-    
-    int CPU_busy=10;
-    
-    int send_val = msgsnd(msgq_busy, &CPU_busy, sizeof(CPU_busy), !IPC_NOWAIT); 
-
-		if (send_val == -1)
-		    perror("Error in send");
-		printf("busy=%d\n",CPU_busy);*/
-
-
 	ready = (Node_priority**)malloc(sizeof(Node_priority*)*n);
 	int size=-1;
 	msg_changed=0;
 	P_msgbuff newProcess;
 	newProcess.id=0;
 	MemoryNode* memory_location =NULL; //location of the current process 
-	/*int rec_val = msgrcv(msgq_ready, &newProcess, sizeof(newProcess),0, !IPC_NOWAIT);
-	if (rec_val == -1)
-	{
-         perror("Error in receive");
-         msg_changed=0;
-        }
-	else
-	{
-	printf("\nMessage received from server: %d at clk= %d\n", newProcess.id,getClk());
-	msg_changed=1;
-	}
-	if(msg_changed==1)
-	{	
-		//add to data structure
-		id[index_p]= newProcess.id;
-		run[index_p]= newProcess.run;
-		priority[index_p]= newProcess.priority;
-		arrival[index_p]= newProcess.arrival;
-		index_p++;
-		//enqueue
-		enqueue_priority(newProcess.priority, newProcess.id, ready, &size, newProcess.run);
-	}*/
-	//int flag=0;
-	//int counter=5;
-	/*while(flag==0) //change condition
-	{
-	  rec_val = msgrcv(msgq_ready, &newProcess, sizeof(newProcess),0, IPC_NOWAIT);
-	if (rec_val == -1 && errno==ENOMSG)
-	{
-         //perror("Error in receive");
-         msg_changed=0;
-        }
-	else
-	{
-	printf("\nMessage received from server: %d at clk= %d\n", newProcess.id,getClk());
-	msg_changed=1;
-	}
-	if(msg_changed==1)
-	{	
-		//add to data structure
-		id[index_p]= newProcess.id;
-		run[index_p]= newProcess.run;
-		priority[index_p]= newProcess.priority;
-		arrival[index_p]= newProcess.arrival;
-		index_p++;
-		//enqueue
-		enqueue_priority(newProcess.priority, newProcess.id, ready, &size, newProcess.run);
-		//flag=1;
-	}
-	/*if (flag==1 && counter>=0)
-	{
-	  flag=0;
-          counter=5;
-	}
-	else if(flag==0 && counter==0)
-	{
-	  flag=1;
-	}
-	counter--;*/
-	//}	//printf("id: %d",ready[0]->id);
+	
 	int rec_val=0;
 	down(sem1); //all processes at the same time have been sent
 	while(rec_val!=-1) //change condition
@@ -459,31 +334,12 @@ void HPF()
 	while(newProcess.id!=-1 || !isempty_priority(size))
 	{
 		
-		//printf("message changed=%d", msg_changed);
-		//check if ready queue is empty or not (if empty-->wait, else-->NoWait)
-	
-	/*if(msg_changed==1 && newProcess.id!=-1)
-	{	
-		//add to data structure
-		id[index_p]= newProcess.id;
-		run[index_p]= newProcess.run;
-		priority[index_p]= newProcess.priority;
-		arrival[index_p]= newProcess.arrival;
-		index_p++;
-		//enqueue
-		enqueue_priority(newProcess.priority, newProcess.id, ready, &size, newProcess.run);
-	}*/	//printf("id: %d",ready[0]->id);
-		
-		//check CPU state
-		/*rec_val = msgrcv(msgq_ready, &CPU_busy, sizeof(CPU_busy), 0, IPC_NOWAIT);
-				if (rec_val == -1 && errno==ENOMSG)
-				    printf("not changed yet\n");*/
-		//printf("empty condition=%d", isempty_priority(size));		    	    
-		//if CPUs not busy dequeue ->no one executing
+			//if CPUs not busy dequeue ->no one executing
 		if(*busyaddr==0 && !isempty_priority(size))
 		{
 			if(memory_location!=NULL)
 			{
+			 fprintf(pFile3, "At time %d freed %d bytes for process %d from %d to %d\n",getClk(),memory_location->size,id[Pindex],memory_location->starts_at,(memory_location->starts_at)+(memory_location->size));
 			  deallocate(memory_location);
 			  printf("\ndeallocated\n");
 			 	PrintMemory(Mem_Map);
@@ -505,15 +361,14 @@ void HPF()
 		/*since all processes are <=256 bytes so this is the only case*/
 		if (memory_location!=NULL) //successful memory allocation
 		{
+		   Pindex=binarySearch(id,0,index_p-1,dequeued_proc->id);
+		     fprintf(pFile3, "At time %d allocated %d bytes for process %d from %d to %d\n",getClk(),memory_location->size,id[Pindex],memory_location->starts_at,(memory_location->starts_at)+(memory_location->size));
 			printf("\nallocated\n");
 			PrintMemory(Mem_Map);
 			printf("process of id %d is dequeued\n",dequeued_proc->id); 
 			///fork
-			Pindex=binarySearch(id,0,index_p-1,dequeued_proc->id);
-			/*if(Pindex!=0)
-			{
-			  //fprintf(pFile, "At time %d process %d finished arr %d total %d remain %d wait %d\n",getClk(),id[Pindex-1],arrival[Pindex-1],run[Pindex-1],*(remaddr[Pindex-1]),(start_time-arrival[Pindex-1]));
-			}*/
+			
+			
 			int pid=fork();
 			start_time=getClk();
 			fprintf(pFile, "At time %d process %d started arr %d total %d remain %d wait %d\n",getClk(),id[Pindex],arrival[Pindex],run[Pindex],run[Pindex],(start_time-arrival[Pindex]));
@@ -555,12 +410,7 @@ void HPF()
 			}
 			else //parent scheduler
 		 	     {
-		 		printf("parent: next cycle\n");
-		  		
-			   /*rec_val = msgrcv(msgq_ready, &CPU_busy, sizeof(CPU_busy), 0, !IPC_NOWAIT);
-					if (rec_val == -1 && errno==ENOMSG)
-						printf("not changed yet\n");*/
-			//counter++;	
+		 		printf("parent: next cycle\n");	
 			
 			printf("remaining time of process %d is %d\n",id[Pindex],*(remaddr[Pindex]));	    
 			  }		    
@@ -570,18 +420,6 @@ void HPF()
 	}
 	if (isempty_priority(size) && newProcess.id!=-1)
 	{
-	/*rec_val = msgrcv(msgq_ready, &newProcess, sizeof(newProcess),0, !IPC_NOWAIT);
-
-		if (rec_val == -1)
-		{
-		   perror("Error in receive");
-		   msg_changed=0;
-		}
-		else
-		{
-		   printf("\nMessage received from server: %d at clk= %d\n", newProcess.id,getClk());
-		   msg_changed=1;
-		}*/
 	rec_val=0;
 	down(sem1);
 	while(rec_val!=-1) //change condition
@@ -640,11 +478,7 @@ void HPF()
 		enqueue_priority(newProcess.priority, newProcess.id, ready, &size, newProcess.run,newProcess.memsize);
 	}	//printf("id: %d",ready[0]->id);
 	
-      /*if (counter==n-1)
-      {
-       max=Pindex;
-      } */ 
- //printf("last received id=%d\n",newProcess.id);      
+            
 }
  
  printf("last process id=%d, Pindex=%d\n",id[Pindex],Pindex);
@@ -660,9 +494,10 @@ void HPF()
     //deallocate last process from memory
    if(memory_location!=NULL)
 	{
-		deallocate(memory_location);
+       fprintf(pFile3, "At time %d freed %d bytes for process %d from %d to %d\n",getClk(),memory_location->size,id[Pindex],memory_location->starts_at,(memory_location->starts_at)+(memory_location->size));
+	    deallocate(memory_location);
 	    printf("\ndeallocated\n");
-		PrintMemory(Mem_Map);
+	    PrintMemory(Mem_Map);
 	} 
 	
 	//output files
@@ -693,7 +528,11 @@ void HPF()
     std_wta=sqrt(std_wta);
    double CPU_Util =(((double)use_time)/((double)end_CPU-(double)start_CPU))*100;
    fprintf(pFile2,"CPU Utilization = %.2f%%\nAvg WTA = %.2f\nAvg Waiting = %.2f\nStd WTA = %.2f",CPU_Util,wta_avg,avg_wait,std_wta);
-    fclose(pFile2);      
+    fclose(pFile2);
+    fclose(pFile3);
+    free(ready);
+    printf("End of HPF\n");
+    return;      
 }
 
 
@@ -707,6 +546,10 @@ void RR(int t_slot)
     
     FILE * pFile2;
     pFile2 = fopen("scheduler.perf", "w");
+
+    FILE * pFile3;
+    pFile3 = fopen("memory.log", "w");
+    fprintf(pFile3, "#At time x allocated y bytes for process z from i to j\n");
 
   (*busyaddr)=0;
   int cont_time=0;
@@ -793,12 +636,13 @@ void RR(int t_slot)
 		
 		if(memory_location[Pindex]!=NULL) //successful memory allocation
 		{
+		   fprintf(pFile3, "At time %d allocated %d bytes for process %d from %d to %d\n",getClk(),memory_location[Pindex]->size,id[Pindex],memory_location[Pindex]->starts_at,(memory_location[Pindex]->starts_at)+(memory_location[Pindex]->size));
 		      printf("\nallocated %d\n",Pindex);
 		      PrintMemory(Mem_Map);
 		      
 	        int pid=fork();
 	        start_time_RR[Pindex]=getClk();
-	        fprintf(pFile, "At time %d process %d started arr %d total %d remain %d wait %d\n",getClk(),id[Pindex],arrival[Pindex],run[Pindex],run[Pindex],*(waitaddr[Pindex]));
+	        fprintf(pFile, "At time %d process %d started arr %d total %d remain %d wait %d\n",getClk(),id[Pindex],arrival[Pindex],run[Pindex],run[Pindex],*(waitaddr[Pindex])+(start_time_RR[Pindex]-arrival[Pindex]));
 
 	        printf("forking condition entered with Pindex=%d and id=%d\n",Pindex,q->front->id);
 		*(remaddr[Pindex]) = q->front->runningTime;
@@ -878,7 +722,7 @@ void RR(int t_slot)
 	       *(waitaddr[Pindex])=*(waitaddr[Pindex])+(getClk()-start_wait[Pindex]);
 	       printf("process of id= %d is resumed at clock= %d with waiting time  	=%d and start wait time=%d\n",id[Pindex],getClk(),*(waitaddr[Pindex]),start_wait[Pindex]);
               *(stataddr[Pindex])='R';
-              fprintf(pFile, "At time %d process %d resumed arr %d total %d remain %d wait %d\n",getClk(),id[Pindex],arrival[Pindex],run[Pindex],*(remaddr[Pindex]),*(waitaddr[Pindex]));
+              fprintf(pFile, "At time %d process %d resumed arr %d total %d remain %d wait %d\n",getClk(),id[Pindex],arrival[Pindex],run[Pindex],*(remaddr[Pindex]),*(waitaddr[Pindex])+(start_time_RR[Pindex]-arrival[Pindex]));
 	      kill(pidarr[Pindex],SIGCONT);
 	       cont_time=getClk();
 	       
@@ -946,7 +790,7 @@ void RR(int t_slot)
 		{
 		      (*busyaddr)=0;
 		      *(stataddr[Pindex])='T';
-		      
+		      fprintf(pFile3, "At time %d freed %d bytes for process %d from %d to %d\n",getClk(),memory_location[Pindex]->size,id[Pindex],memory_location[Pindex]->starts_at,(memory_location[Pindex]->starts_at)+(memory_location[Pindex]->size));
 		      //deallocate from memory
 		      deallocate(memory_location[Pindex]);
 		      printf("\ndeallocated\n");
@@ -958,7 +802,7 @@ void RR(int t_slot)
 		      
 		      WTA[Pindex]= (double)(getClk()-arrival[Pindex])/(double)run[Pindex];
    		      //waiting_time[Pindex]=start_time-arrival[Pindex];
-		      fprintf(pFile, "At time %d process %d finished arr %d total %d remain %d wait %d TA %d WTA %.2f\n",getClk(),id[Pindex],arrival[Pindex],run[Pindex],*(remaddr[Pindex]),*(waitaddr[Pindex]),(getClk()-arrival[Pindex]),WTA[Pindex]);
+		      fprintf(pFile, "At time %d process %d finished arr %d total %d remain %d wait %d TA %d WTA %.2f\n",getClk(),id[Pindex],arrival[Pindex],run[Pindex],*(remaddr[Pindex]),*(waitaddr[Pindex])+(start_time_RR[Pindex]-arrival[Pindex]),(getClk()-arrival[Pindex]),WTA[Pindex]);
 		      
 		        //check waiting list
 		      Node_circular* temp=w_list->front; //iterator
@@ -970,6 +814,7 @@ void RR(int t_slot)
 			  memory_location[wl_index]=allocate(Mem_Map,temp->memory_size);	
 				if(memory_location[wl_index]!=NULL)
 				{
+				fprintf(pFile3, "At time %d allocated %d bytes for process %d from %d to %d\n",getClk(),memory_location[wl_index]->size,id[wl_index],memory_location[wl_index]->starts_at,(memory_location[wl_index]->starts_at)+(memory_location[wl_index]->size));
 				printf("w.l first was allocated id %d\n",temp->id);
 				PrintMemory(Mem_Map);
 					enqueue_at_front(q,temp->id,temp->runningTime, temp->memory_size); //add to front of ready queue
@@ -985,6 +830,7 @@ void RR(int t_slot)
 						memory_location[wl_index]= allocate(Mem_Map,temp->next->memory_size);	
 						if(memory_location[wl_index]!=NULL)
 						{
+						fprintf(pFile3, "At time %d allocated %d bytes for process %d from %d to %d\n",getClk(),memory_location[wl_index]->size,id[wl_index],memory_location[wl_index]->starts_at,(memory_location[wl_index]->starts_at)+(memory_location[wl_index]->size));
 							enqueue_at_front(q,temp->next->id,temp->next->runningTime, temp->next->memory_size); //add to front of ready queue							
 							RemoveFromList(w_list, temp);//remove first element
 							break;
@@ -1013,7 +859,7 @@ void RR(int t_slot)
 		      if(*(remaddr[Pindex])>0)
 		      {
 		        kill(pidarr[Pindex],SIGSTOP);
-		        fprintf(pFile, "At time %d process %d paused arr %d total %d remain %d wait %d\n",getClk(),id[Pindex],arrival[Pindex],run[Pindex],*(remaddr[Pindex]),*(waitaddr[Pindex]));
+		        fprintf(pFile, "At time %d process %d paused arr %d total %d remain %d wait %d\n",getClk(),id[Pindex],arrival[Pindex],run[Pindex],*(remaddr[Pindex]),*(waitaddr[Pindex])+(start_time_RR[Pindex]-arrival[Pindex]));
 
 		        remaining_time[Pindex]=*(remaddr[Pindex]);
 		        rotate(q);
@@ -1025,6 +871,7 @@ void RR(int t_slot)
 		        *(stataddr[Pindex])='T';
 		        
 		        //deallocate from memory
+		        fprintf(pFile3, "At time %d freed %d bytes for process %d from %d to %d\n",getClk(),memory_location[Pindex]->size,id[Pindex],memory_location[Pindex]->starts_at,(memory_location[Pindex]->starts_at)+(memory_location[Pindex]->size));
 				deallocate(memory_location[Pindex]);
 				printf("\ndeallocated\n");
 				PrintMemory(Mem_Map);
@@ -1032,7 +879,7 @@ void RR(int t_slot)
 		        dequeue_circular(q);
 		        printf("Process of id=%d is dequeued\n",id[Pindex]);
 		        WTA[Pindex]= (double)(getClk()-arrival[Pindex])/(double)run[Pindex];
-		        fprintf(pFile, "At time %d process %d finished arr %d total %d remain %d wait %d TA %d WTA %.2f\n",getClk(),id[Pindex],arrival[Pindex],run[Pindex],*(remaddr[Pindex]),*(waitaddr[Pindex]),(getClk()-arrival[Pindex]),WTA[Pindex]);
+		        fprintf(pFile, "At time %d process %d finished arr %d total %d remain %d wait %d TA %d WTA %.2f\n",getClk(),id[Pindex],arrival[Pindex],run[Pindex],*(remaddr[Pindex]),*(waitaddr[Pindex])+(start_time_RR[Pindex]-arrival[Pindex]),(getClk()-arrival[Pindex]),WTA[Pindex]);
 		        
 		        //check waiting list
 		      Node_circular* temp=w_list->front; //iterator
@@ -1043,6 +890,7 @@ void RR(int t_slot)
 			  memory_location[wl_index]=allocate(Mem_Map,temp->memory_size);	
 				if(memory_location[wl_index]!=NULL)
 				{
+				fprintf(pFile3, "At time %d allocated %d bytes for process %d from %d to %d\n",getClk(),memory_location[wl_index]->size,id[wl_index],memory_location[wl_index]->starts_at,(memory_location[wl_index]->starts_at)+(memory_location[wl_index]->size));
 					enqueue_at_front(q,temp->id, temp->runningTime,temp->memory_size); //add to front of ready queue
 					RemoveFromList(w_list, NULL); //remove first element
 				}
@@ -1054,6 +902,7 @@ void RR(int t_slot)
 						memory_location[wl_index]= allocate(Mem_Map,temp->next->memory_size);	
 						if(memory_location[wl_index]!=NULL)
 						{
+						fprintf(pFile3, "At time %d allocated %d bytes for process %d from %d to %d\n",getClk(),memory_location[wl_index]->size,id[wl_index],memory_location[wl_index]->starts_at,(memory_location[wl_index]->starts_at)+(memory_location[wl_index]->size));
 							enqueue_at_front(q,temp->next->id, temp->next->runningTime,temp->next->memory_size); //add to front of ready queue							
 							RemoveFromList(w_list, temp);//remove first element
 							break;
@@ -1083,7 +932,7 @@ double std_wta=0;
     {
       use_time+=run[i];
       wta_avg+=WTA[i];
-      avg_wait+=(double)(*(waitaddr[i]));
+      avg_wait+=(double)(*(waitaddr[i]))+(double)((start_time_RR[i]-arrival[i]));
     }
  wta_avg/=(double)n;
  avg_wait/=(double)n;
@@ -1096,17 +945,33 @@ double std_wta=0;
   double CPU_Util =(((double)use_time)/((double)end_CPU-(double)start_CPU))*100;
    fprintf(pFile2,"CPU Utilization = %.2f%%\nAvg WTA = %.2f\nAvg Waiting = %.2f\nStd WTA = %.2f",CPU_Util,wta_avg,avg_wait,std_wta);	        
 fclose(pFile2);
-
+fclose(pFile3);
 free(memory_location);	 
 }
 //////////////////////////////////
 void SRTN()
 {
 (*busyaddr)=0;
+Pindex=-1;
+int pid;
+int start_CPU=getClk();
+int waiting_list_flag=0;
+  FILE * pFile;
+    pFile = fopen("scheduler.log", "w");
+    fprintf(pFile, "#At time x process y state arr w total z remain y wait k\n");
+    
+    FILE * pFile2;
+    pFile2 = fopen("scheduler.perf", "w");
 
+    FILE * pFile3;
+    pFile3 = fopen("memory.log", "w");
+    fprintf(pFile3, "#At time x allocated y bytes for process z from i to j\n");
 //memory locations for all processes
-	MemoryNode** memory_location = (MemoryNode**)malloc(n*sizeof(MemoryNode*));
-	
+MemoryNode** memory_location = (MemoryNode**)malloc(n*sizeof(MemoryNode*));
+
+ //waiting list for processes that couldn't be allocated in memory 
+ WaitingList* w_list= create_Waiting_List();
+ 	
 readySRTN = (Node_running**)malloc(sizeof(Node_running*)*n);
 	int size=-1;
 	msg_changed=0;
@@ -1118,18 +983,18 @@ readySRTN = (Node_running**)malloc(sizeof(Node_running*)*n);
 	while(rec_val!=-1)
 	{
 		rec_val = msgrcv(msgq_ready, &newProcess, sizeof(newProcess),0, IPC_NOWAIT);
-		if (rec_val == -1)
+		if (rec_val == -1 && errno==ENOMSG)
 		{
 		     perror("Error in receive");
 		     msg_changed=0;
-		    }
+		}
 		else
 		{
 		printf("\nMessage received from server: %d\n", newProcess.id);
 		msg_changed=1;
 		}
 		
-		if(msg_changed==1)
+		if(msg_changed==1 && newProcess.id!=-1)
 		{	
 			//add to data structure
 			id[index_p]= newProcess.id;
@@ -1170,9 +1035,9 @@ readySRTN = (Node_running**)malloc(sizeof(Node_running*)*n);
 		
 		down(sem1);
 		while(rec_val!=-1)
-	{
+	     {
 		rec_val = msgrcv(msgq_ready, &newProcess, sizeof(newProcess),0, IPC_NOWAIT);
-		if (rec_val == -1)
+		if (rec_val == -1 && errno==ENOMSG)
 		{
 		     perror("Error in receive");
 		     msg_changed=0;
@@ -1198,7 +1063,7 @@ readySRTN = (Node_running**)malloc(sizeof(Node_running*)*n);
 		}	
 	}
 		
-               if(*busyaddr==1 && !isempty_priority(size))
+               if((*busyaddr)==1 && !isempty_priority(size))
                {
                   if (newProcess.run < *(remaddr[Pindex]))
   		  {
@@ -1210,6 +1075,7 @@ readySRTN = (Node_running**)malloc(sizeof(Node_running*)*n);
   		      start_wait[Pindex]=getClk();
   		      printf("preemption4\n");
                      kill(pidarr[Pindex],SIGSTOP); 
+                      fprintf(pFile, "At time %d process %d paused arr %d total %d remain %d wait %d\n",getClk(),id[Pindex],arrival[Pindex],run[Pindex],*(remaddr[Pindex]),*(waitaddr[Pindex])+(start_time_SRTN[Pindex]-arrival[Pindex]));
                      printf("preemption5\n");   
      		      enqueue_running(dequeuedS->priority, dequeuedS->id, readySRTN, &size, *(remaddr[Pindex]), dequeuedS->runningTime);
      		      printf("preemption6\n");
@@ -1219,11 +1085,82 @@ readySRTN = (Node_running**)malloc(sizeof(Node_running*)*n);
 
 	}
 		////// 3lshan afdal a-recieve (elly fo2 y3ny)
-		if(*busyaddr==0 && !isempty_priority(size))
+		if((*busyaddr)==0 && !isempty_priority(size))
+		{
+		if(Pindex>-1 && *(stataddr[Pindex])!='P')
+		{
+		fprintf(pFile3, "At time %d freed %d bytes for process %d from %d to %d\n",getClk(),memory_location[Pindex]->size,id[Pindex],memory_location[Pindex]->starts_at,(memory_location[Pindex]->starts_at)+(memory_location[Pindex]->size));
+		//deallocates
+		deallocate(memory_location[Pindex]);
+		memory_location[Pindex]=NULL;
+		printf("\ndeallocated \n%d",Pindex);
+		PrintMemory(Mem_Map);
+		
+		 WTA[Pindex]= (double)(getClk()-arrival[Pindex])/(double)run[Pindex];
+		 waiting_time[Pindex]=start_time-arrival[Pindex];
+		fprintf(pFile, "At time %d process %d finished arr %d total %d remain %d wait %d TA %d WTA %.2f\n",getClk(),id[Pindex],arrival[Pindex],run[Pindex],*(remaddr[Pindex]),waiting_time[Pindex]+*(waitaddr[Pindex]),(getClk()-arrival[Pindex]),WTA[Pindex]);
+		
+		//check waiting list
+		waiting_list_flag=0;
+		      Node_circular* temp=w_list->front; //iterator
+		      if(temp!=NULL)
+		      {
+		      //for first element 
+		      printf("w.l not empty\n");
+		      int wl_index=binarySearch(id,0,index_p-1,temp->id);
+			  memory_location[wl_index]=allocate(Mem_Map,temp->memory_size);	
+				if(memory_location[wl_index]!=NULL)
+				{
+				fprintf(pFile3, "At time %d allocated %d bytes for process %d from %d to %d\n",getClk(),memory_location[wl_index]->size,id[wl_index],memory_location[wl_index]->starts_at,(memory_location[wl_index]->starts_at)+(memory_location[wl_index]->size));
+				printf("w.l first was allocated id %d\n",temp->id);
+				PrintMemory(Mem_Map);
+					//enqueue_at_front(q,temp->id,temp->runningTime, temp->memory_size); //add to front of ready queue
+					Node_running* tempnode = (Node_running*)malloc(sizeof(Node_running)); 
+                                       tempnode->id = temp->id; 
+                                       //tempnode->priority = temp->priority; 
+                                       tempnode->runningTime = temp->runningTime;
+                                       tempnode->memory_size= temp->memory_size;
+                                       dequeuedS=tempnode;
+                                      waiting_list_flag=1;
+					printf("enqueued at front\n");
+					RemoveFromList(w_list, NULL); //remove first element
+					printf("removed from w.l\n");
+				}
+				else //check rest of waiting list
+				{
+					while(temp->next!=NULL)
+					{
+						wl_index=binarySearch(id,0,index_p-1,temp->next->id);
+						memory_location[wl_index]= allocate(Mem_Map,temp->next->memory_size);	
+						if(memory_location[wl_index]!=NULL)
+						{
+						fprintf(pFile3, "At time %d allocated %d bytes for process %d from %d to %d\n",getClk(),memory_location[wl_index]->size,id[wl_index],memory_location[wl_index]->starts_at,(memory_location[wl_index]->starts_at)+(memory_location[wl_index]->size));
+							//enqueue_at_front(q,temp->next->id,temp->next->runningTime, temp->next->memory_size); //add to front of ready queue		
+							Node_running* tempnode = (Node_running*)malloc(sizeof(Node_running)); 
+                                                   tempnode->id = temp->next->id; 
+                                                   //tempnode->priority = temp->next->priority; 
+                                                   tempnode->runningTime = temp->next->runningTime;
+                                                   tempnode->memory_size= temp->next->memory_size;
+                                                   dequeuedS=tempnode;
+                                                   waiting_list_flag=1;					
+							RemoveFromList(w_list, temp);//remove first element
+							break;
+							
+						}
+						
+						temp=temp->next;
+					}
+				}
+	
+		      }///end of waiting list check
+	
+		}
+		
+		if(waiting_list_flag==0)
 		{
 		//dequeue
-		dequeuedS = dequeue_running(readySRTN, &size);
-		
+	 	  dequeuedS = dequeue_running(readySRTN, &size);
+		}
 		
 		(*busyaddr)=1;
 		printf("process of id %d is dequeued\n",dequeuedS->id); 
@@ -1234,7 +1171,7 @@ readySRTN = (Node_running**)malloc(sizeof(Node_running*)*n);
 		
 		if (*(stataddr[Pindex])!='P')//new process
 		{
-		
+		memory_location[Pindex]=NULL;
 		//try to allocate
 		memory_location[Pindex]=allocate(Mem_Map,dequeuedS->memory_size);
 		printf("\nallocated \n%d",Pindex);
@@ -1242,11 +1179,14 @@ readySRTN = (Node_running**)malloc(sizeof(Node_running*)*n);
 		
 		if(memory_location[Pindex]!=NULL) //successful allocation
 		{
+		fprintf(pFile3, "At time %d allocated %d bytes for process %d from %d to %d\n",getClk(),memory_location[Pindex]->size,id[Pindex],memory_location[Pindex]->starts_at,(memory_location[Pindex]->starts_at)+(memory_location[Pindex]->size));
 		///fork
-		int pid=fork();
+		pid=fork();
 		*(remaddr[Pindex])=run[Pindex];
 		*(stataddr[Pindex])='R';
+		start_time_SRTN[Pindex]=getClk();
 		start_time=getClk();
+		fprintf(pFile, "At time %d process %d started arr %d total %d remain %d wait %d\n",getClk(),id[Pindex],arrival[Pindex],run[Pindex],run[Pindex],*(waitaddr[Pindex])+(start_time_SRTN[Pindex]-arrival[Pindex]));
 		printf("process of id %d after forking command with pid= %d\n",dequeuedS->id, pid);
 		 if (pid==-1)
      	        {
@@ -1294,13 +1234,14 @@ readySRTN = (Node_running**)malloc(sizeof(Node_running*)*n);
 		else //no memory found
 		{
 			//add to waiting list
+		enqueue_waitingist(w_list, dequeuedS->id, dequeuedS->runningTime, dequeuedS->memory_size);
+		printf("Process of id=%d is added to waiting list\n",id[Pindex]);
 		}
 	}
 		else if (*(stataddr[Pindex])=='P')
 		{
 		    *(waitaddr[Pindex])=*(waitaddr[Pindex])+(getClk()-start_wait[Pindex]);
-
-
+                  fprintf(pFile, "At time %d process %d resumed arr %d total %d remain %d wait %d\n",getClk(),id[Pindex],arrival[Pindex],run[Pindex],*(remaddr[Pindex]),*(waitaddr[Pindex])+(start_time_SRTN[Pindex]-arrival[Pindex]));
 		    (*busyaddr)=1;
 		    *(stataddr[Pindex])='R';
 		    kill(pidarr[Pindex],SIGCONT);
@@ -1310,7 +1251,7 @@ readySRTN = (Node_running**)malloc(sizeof(Node_running*)*n);
 	
 	printf("\nrem=%d\n",*(remaddr[Pindex]));
 	//check if process has terminated
-	if (*(remaddr[Pindex])<=0 && memory_location[Pindex]!=NULL)
+	/*if (*(remaddr[Pindex])<=0 && memory_location[Pindex]!=NULL)
 	{
 		printf("\npindex=%d type=%c at clk= %d rem=%d\n",Pindex, memory_location[Pindex]->type,getClk(), *(remaddr[Pindex]));
 		//deallocates
@@ -1318,8 +1259,8 @@ readySRTN = (Node_running**)malloc(sizeof(Node_running*)*n);
 		memory_location[Pindex]=NULL;
 		printf("\ndeallocated \n%d",Pindex);
 		PrintMemory(Mem_Map);
-		
-	}
+		/*fprintf(pFile, "At time %d process %d finished arr %d total %d remain %d wait %d TA %d WTA %.2f\n",getClk(),id[Pindex],arrival[Pindex],run[Pindex],*(remaddr[Pindex]),*(waitaddr[Pindex]),(getClk()-arrival[Pindex]),WTA[Pindex]);
+	}*/
 
 }
  printf("last process id=%d, Pindex=%d\n",id[Pindex],Pindex);
@@ -1333,10 +1274,89 @@ readySRTN = (Node_running**)malloc(sizeof(Node_running*)*n);
 //deallocate last process
 printf("\npindex=%d type=%c at clk= %d\n",Pindex, memory_location[Pindex]->type,getClk());
 		//deallocate
+		fprintf(pFile3, "At time %d freed %d bytes for process %d from %d to %d\n",getClk(),memory_location[Pindex]->size,id[Pindex],memory_location[Pindex]->starts_at,(memory_location[Pindex]->starts_at)+(memory_location[Pindex]->size));
 		deallocate(memory_location[Pindex]);
 		memory_location[Pindex]=NULL;
 		printf("\ndeallocated \n%d",Pindex);
 		PrintMemory(Mem_Map);
+WTA[Pindex]= (double)(getClk()-arrival[Pindex])/(double)run[Pindex];		
+fprintf(pFile, "At time %d process %d finished arr %d total %d remain %d wait %d TA %d WTA %.2f\n",getClk(),id[Pindex],arrival[Pindex],run[Pindex],*(remaddr[Pindex]),*(waitaddr[Pindex])+(start_time_SRTN[Pindex]-arrival[Pindex]),(getClk()-arrival[Pindex]),WTA[Pindex]);
+fclose(pFile);	        
+int end_CPU=getClk();	        
+int use_time=0;
+double wta_avg=0;
+double avg_wait=0;
+double std_wta=0;
+   for(int i=0; i<n; i++)
+    {
+      use_time+=run[i];
+      wta_avg+=WTA[i];
+      avg_wait+=(double)(*(waitaddr[i]))+(double)(start_time_SRTN[i]-arrival[i]);
+    }
+ wta_avg/=(double)n;
+ avg_wait/=(double)n;
+   for(int i=0; i<n; i++)
+    {
+      std_wta+=pow((wta_avg-WTA[i]),2);
+    }
+  std_wta/=(double)n;
+  std_wta=sqrt(std_wta);
+  double CPU_Util =(((double)use_time)/((double)end_CPU-(double)start_CPU))*100;
+   fprintf(pFile2,"CPU Utilization = %.2f%%\nAvg WTA = %.2f\nAvg Waiting = %.2f\nStd WTA = %.2f",CPU_Util,wta_avg,avg_wait,std_wta);	        
+fclose(pFile2);
+fclose(pFile3);
 		
 		free(memory_location);
+		free(readySRTN);
+		
+		destroyClk(false);
+		free(str2);
+	   	free(str);
+	   	free(str3);
+	   	free(str4);
+	   	free(str5);
+	   	
+	   	free (id);
+	   	free (pidarr);
+    	free (arrival);
+    	free (run);
+    	free (priority);
+    	free (waiting_time); //start-arrival
+    	free (remaining_time);
+    	 
+    	free(start_wait);
+    	
+    	free(start_time_RR);
+    	free(start_time_SRTN);
+    	free(WTA);
+    	//free(ready);
+    	//free(readySRTN);
+    	
+    	shmdt(busyaddr);
+    	
+    	
+	//delete shared memory
+	shmctl(busyid, IPC_RMID, 0);
+	  
+	//dettach
+	//delete shared memory
+	for (int i=0; i<n; i++)
+	{
+		shmdt(stataddr[i]);
+		shmctl(stat_id[i], IPC_RMID, 0);
+		shmdt(remaddr[i]);
+		shmctl(rem_id[i], IPC_RMID, 0);
+		shmdt(waitaddr[i]);
+		shmctl(wait_id[i], IPC_RMID, 0);
+         }
+        
+        free(remaddr);
+    	free(rem_id);
+    	free(waitaddr);
+    	free(wait_id);
+		free(stataddr);
+    	free(stat_id);
+    
+  		free (status);
+  		printf("End of SRTN\n");
 }
