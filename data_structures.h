@@ -112,7 +112,7 @@ typedef struct node_s {
     int id; 
     int priority; 
     int runningTime; // Lower values -> higher priority 
-  
+  	int memory_size;
 } Node_running;
 
 void reheapUpS(int i, Node_running ** H) 
@@ -158,12 +158,13 @@ void reheapDownS(int i, Node_running **H,int * size)
 } 
 
 //add a node to the heap
-void enqueue_running(int p, int ID, Node_running **H, int * size, int rTime) 
+void enqueue_running(int p, int ID, Node_running **H, int * size, int rTime,int mem) 
 { 
 	Node_running* temp = (Node_running*)malloc(sizeof(Node_running)); 
     temp->id = ID; 
     temp->priority = p; 
     temp->runningTime = rTime;
+    temp->memory_size=mem;
     
 	*size = *size + 1; 
 	H[*size] = temp; 

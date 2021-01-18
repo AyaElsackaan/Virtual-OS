@@ -1099,11 +1099,14 @@ fclose(pFile2);
 
 free(memory_location);	 
 }
-
+//////////////////////////////////
 void SRTN()
 {
 (*busyaddr)=0;
 
+//memory locations for all processes
+	MemoryNode** memory_location = (MemoryNode**)malloc(n*sizeof(MemoryNode*));
+	
 readySRTN = (Node_running**)malloc(sizeof(Node_running*)*n);
 	int size=-1;
 	msg_changed=0;
@@ -1135,7 +1138,7 @@ readySRTN = (Node_running**)malloc(sizeof(Node_running*)*n);
 			arrival[index_p]= newProcess.arrival;
 			index_p++;
 			//enqueue
-			enqueue_running(newProcess.priority, newProcess.id, readySRTN, &size, newProcess.run);
+			enqueue_running(newProcess.priority, newProcess.id, readySRTN, &size, newProcess.run, newProcess.memsize);
 
 
 		}	
@@ -1162,7 +1165,7 @@ readySRTN = (Node_running**)malloc(sizeof(Node_running*)*n);
 		run[index_p]= newProcess.run;
 		priority[index_p]= newProcess.priority;
 		arrival[index_p]= newProcess.arrival;
-		enqueue_running(newProcess.priority, newProcess.id, readySRTN, &size, newProcess.run);
+		enqueue_running(newProcess.priority, newProcess.id, readySRTN, &size, newProcess.run, newProcess.memsize);
 		index_p++;
 		
 		down(sem1);
@@ -1189,7 +1192,7 @@ readySRTN = (Node_running**)malloc(sizeof(Node_running*)*n);
 			arrival[index_p]= newProcess.arrival;
 			index_p++;
 			//enqueue
-			enqueue_running(newProcess.priority, newProcess.id, readySRTN, &size, newProcess.run);
+			enqueue_running(newProcess.priority, newProcess.id, readySRTN, &size, newProcess.run, newProcess.memsize);
 
 
 		}	
@@ -1199,11 +1202,17 @@ readySRTN = (Node_running**)malloc(sizeof(Node_running*)*n);
                {
                   if (newProcess.run < *(remaddr[Pindex]))
   		  {
+  		  printf("preemption\n");
   		      (*busyaddr)=0;
+  		      printf("preemption2\n");
   		      *(stataddr[Pindex])='P';
+  		      printf("preemption3\n");
   		      start_wait[Pindex]=getClk();
-                     kill(pidarr[Pindex],SIGSTOP);    
-     		      enqueue_running(dequeuedS->priority, dequeuedS->id, readySRTN, &size, *(remaddr[Pindex]));
+  		      printf("preemption4\n");
+                     kill(pidarr[Pindex],SIGSTOP); 
+                     printf("preemption5\n");   
+     		      enqueue_running(dequeuedS->priority, dequeuedS->id, readySRTN, &size, *(remaddr[Pindex]), dequeuedS->runningTime);
+     		      printf("preemption6\n");
      		     
    		 }
 		} 
@@ -1214,14 +1223,28 @@ readySRTN = (Node_running**)malloc(sizeof(Node_running*)*n);
 		{
 		//dequeue
 		dequeuedS = dequeue_running(readySRTN, &size);
+		
+		
 		(*busyaddr)=1;
 		printf("process of id %d is dequeued\n",dequeuedS->id); 
-		///fork
+		
 		Pindex=binarySearch(id,0,index_p-1,dequeuedS->id);
 		
-		if (*(stataddr[Pindex])!='P')
+		
+		
+		if (*(stataddr[Pindex])!='P')//new process
 		{
+		
+		//try to allocate
+		memory_location[Pindex]=allocate(Mem_Map,dequeuedS->memory_size);
+		printf("\nallocated \n%d",Pindex);
+		PrintMemory(Mem_Map);
+		
+		if(memory_location[Pindex]!=NULL) //successful allocation
+		{
+		///fork
 		int pid=fork();
+		*(remaddr[Pindex])=run[Pindex];
 		*(stataddr[Pindex])='R';
 		start_time=getClk();
 		printf("process of id %d after forking command with pid= %d\n",dequeuedS->id, pid);
@@ -1268,8 +1291,12 @@ readySRTN = (Node_running**)malloc(sizeof(Node_running*)*n);
 	     }	
 	      
 		}
-		
-		if (*(stataddr[Pindex])=='P')
+		else //no memory found
+		{
+			//add to waiting list
+		}
+	}
+		else if (*(stataddr[Pindex])=='P')
 		{
 		    *(waitaddr[Pindex])=*(waitaddr[Pindex])+(getClk()-start_wait[Pindex]);
 
@@ -1278,6 +1305,20 @@ readySRTN = (Node_running**)malloc(sizeof(Node_running*)*n);
 		    *(stataddr[Pindex])='R';
 		    kill(pidarr[Pindex],SIGCONT);
 		}
+		
+	}
+	
+	printf("\nrem=%d\n",*(remaddr[Pindex]));
+	//check if process has terminated
+	if (*(remaddr[Pindex])<=0 && memory_location[Pindex]!=NULL)
+	{
+		printf("\npindex=%d type=%c at clk= %d rem=%d\n",Pindex, memory_location[Pindex]->type,getClk(), *(remaddr[Pindex]));
+		//deallocates
+		deallocate(memory_location[Pindex]);
+		memory_location[Pindex]=NULL;
+		printf("\ndeallocated \n%d",Pindex);
+		PrintMemory(Mem_Map);
+		
 	}
 
 }
@@ -1289,5 +1330,13 @@ readySRTN = (Node_running**)malloc(sizeof(Node_running*)*n);
      printf("last process id=%d, Pindex=%d\n",id[Pindex],Pindex);
      sleep(1);
    }          
-
+//deallocate last process
+printf("\npindex=%d type=%c at clk= %d\n",Pindex, memory_location[Pindex]->type,getClk());
+		//deallocate
+		deallocate(memory_location[Pindex]);
+		memory_location[Pindex]=NULL;
+		printf("\ndeallocated \n%d",Pindex);
+		PrintMemory(Mem_Map);
+		
+		free(memory_location);
 }
