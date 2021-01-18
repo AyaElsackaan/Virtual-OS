@@ -531,6 +531,55 @@ void HPF()
     fclose(pFile2);
     fclose(pFile3);
     free(ready);
+    destroyClk(false);
+		free(str2);
+	   	free(str);
+	   	free(str3);
+	   	free(str4);
+	   	free(str5);
+	   	
+	   	free (id);
+	   	free (pidarr);
+    	free (arrival);
+    	free (run);
+    	free (priority);
+    	free (waiting_time); //start-arrival
+    	free (remaining_time);
+    	 
+    	free(start_wait);
+    	
+    	free(start_time_RR);
+    	free(start_time_SRTN);
+    	free(WTA);
+    	//free(ready);
+    	//free(readySRTN);
+    	
+    	shmdt(busyaddr);
+    	
+    	
+	//delete shared memory
+	shmctl(busyid, IPC_RMID, 0);
+	  
+	//dettach
+	//delete shared memory
+	for (int i=0; i<n; i++)
+	{
+		shmdt(stataddr[i]);
+		shmctl(stat_id[i], IPC_RMID, 0);
+		shmdt(remaddr[i]);
+		shmctl(rem_id[i], IPC_RMID, 0);
+		shmdt(waitaddr[i]);
+		shmctl(wait_id[i], IPC_RMID, 0);
+         }
+        
+        free(remaddr);
+    	free(rem_id);
+    	free(waitaddr);
+    	free(wait_id);
+		free(stataddr);
+    	free(stat_id);
+    
+  		free (status);
     printf("End of HPF\n");
     return;      
 }
@@ -946,7 +995,56 @@ double std_wta=0;
    fprintf(pFile2,"CPU Utilization = %.2f%%\nAvg WTA = %.2f\nAvg Waiting = %.2f\nStd WTA = %.2f",CPU_Util,wta_avg,avg_wait,std_wta);	        
 fclose(pFile2);
 fclose(pFile3);
-free(memory_location);	 
+free(memory_location);	
+destroyClk(false);
+		free(str2);
+	   	free(str);
+	   	free(str3);
+	   	free(str4);
+	   	free(str5);
+	   	
+	   	free (id);
+	   	free (pidarr);
+    	free (arrival);
+    	free (run);
+    	free (priority);
+    	free (waiting_time); //start-arrival
+    	free (remaining_time);
+    	 
+    	free(start_wait);
+    	
+    	free(start_time_RR);
+    	free(start_time_SRTN);
+    	free(WTA);
+    	//free(ready);
+    	//free(readySRTN);
+    	
+    	shmdt(busyaddr);
+    	
+    	
+	//delete shared memory
+	shmctl(busyid, IPC_RMID, 0);
+	  
+	//dettach
+	//delete shared memory
+	for (int i=0; i<n; i++)
+	{
+		shmdt(stataddr[i]);
+		shmctl(stat_id[i], IPC_RMID, 0);
+		shmdt(remaddr[i]);
+		shmctl(rem_id[i], IPC_RMID, 0);
+		shmdt(waitaddr[i]);
+		shmctl(wait_id[i], IPC_RMID, 0);
+         }
+        
+        free(remaddr);
+    	free(rem_id);
+    	free(waitaddr);
+    	free(wait_id);
+		free(stataddr);
+    	free(stat_id);
+    
+  		free (status); 
 }
 //////////////////////////////////
 void SRTN()
