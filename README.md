@@ -25,3 +25,19 @@ make
 ## To run your project, use the command:
 make run
 
+## Input:
+### processes.txt
+A .txt file containing id, arrival time, running time, priority and required memory size of each process.
+
+You can generate a random file using the command: ./test_generator.out
+
+## Output Files:
+
+### sheduler.log
+contains the timeline of start, pause, resume and finish of each process after running the selected algorithm.
+
+### scheduler.perf
+contains the CPU utilization percentage, as well as both the mean and the standard deviation of the weighted turaround time.
+
+### memory.log
+contains the timeline of memory allocation and deallocation after applying the buddy system allocation algorithm.
