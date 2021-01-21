@@ -19,17 +19,24 @@ If you add a file to your project add it to the build section in the Makefile
 
 Always start the line with a tab in Makefile, it is its syntax
 
-## To compile your project, use the command:
+To compile your project, use the command:
+```sh
 make
+```
 
-## To run your project, use the command:
+To run your project, use the command:
+```sh
 make run
+```
 
 ## Input File:
 ### processes.txt
 A .txt file containing id, arrival time, running time, priority and required memory size of each process.
 
-You can generate a random file using the command: ./test_generator.out
+You can generate a random file using the command: 
+```sh
+./test_generator.out
+```
 
 ## Output Files:
 
