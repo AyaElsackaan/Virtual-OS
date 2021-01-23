@@ -1,5 +1,5 @@
 # Virtual-OS
-An implementation of a scheduler and a memeory manager to simulate the function of a mini operating system.
+An implementation of a scheduler and a memory manager to simulate the function of a mini operating system.
 
 This is CMPN303 course project - Faculty of Engineering, Cairo University.
 
@@ -44,7 +44,7 @@ You can generate a random file using the command:
 Contains the timeline of start, pause, resume and finish of each process after running the selected algorithm.
 
 ### scheduler.perf
-Contains the CPU utilization percentage, as well as both the mean and the standard deviation of the weighted turaround time.
+Contains the CPU utilization percentage, as well as both the mean and the standard deviation of the weighted turnaround time.
 
 ### memory.log
 Contains the timeline of memory allocation and deallocation after applying the buddy system allocation algorithm.
